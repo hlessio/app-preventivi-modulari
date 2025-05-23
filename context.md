@@ -18,7 +18,7 @@ Sviluppare un'applicazione web per la generazione di documenti (inizialmente pre
 
 **Fasi di Sviluppo (vedi Documento di Sviluppo v1.1 per dettagli):**
 *   **Fase 0:** Progettazione Dettagliata Schemi e Moduli (LLM-Ready) - **COMPLETATA** (Setup ambiente base incluso)
-*   **Fase 1:** MVP - Preventivatore Manuale Modulare (LLM-Ready) - **IN CORSO**
+*   **Fase 1:** MVP - Preventivatore Manuale Modulare (LLM-Ready) - **COMPLETATA AL 100%**
     *   [X] Backend: API base, logica assemblaggio JSON, rendering Jinja2. (Endpoint di visualizzazione base implementato)
     *   [X] Backend: Validazione input con Pydantic. (Modelli Pydantic creati in `app/models.py` e integrati nell'endpoint `/preventivo/visualizza`)
     *   [X] Backend: Logica di calcolo per totali e subtotali. (Implementato in `app/services/preventivo_calculator.py`)
@@ -32,9 +32,9 @@ Sviluppare un'applicazione web per la generazione di documenti (inizialmente pre
 ---
 **STATO ATTUALE DELLO SVILUPPO (Aggiornare regolarmente):**
 *   **Data Ultimo Aggiornamento:** 2024-12-19
-*   **Fase Corrente:** Fase 1 - MVP - Preventivatore Manuale Modulare (LLM-Ready)
-*   **Step Attuale:** ✅ **MILESTONE MAGGIORE COMPLETATO** - Frontend completo con HTMX + Alpine.js:
-    *   ✅ Backend core per preventivi pienamente funzionante
+*   **Fase Corrente:** Fase 1 - MVP - Preventivatore Manuale Modulare (LLM-Ready) - **COMPLETATA AL 100%**
+*   **Step Attuale:** ✅ **MILESTONE COMPLETO** - MVP funzionante e versionato su GitHub:
+    *   ✅ **Backend core per preventivi pienamente funzionante**
     *   ✅ Modelli Pydantic completi (`app/models.py`) integrati e funzionanti
     *   ✅ Logica di calcolo totali/subtotali implementata (`app/services/preventivo_calculator.py`)
     *   ✅ Interazione database completa (SQLAlchemy + SQLite per testing, pronto per PostgreSQL)
@@ -52,14 +52,24 @@ Sviluppare un'applicazione web per la generazione di documenti (inizialmente pre
         *   ✅ Navigazione tra pagine completa
         *   ✅ UI responsiva con Tailwind CSS
         *   ✅ Sistema notifiche utente implementato
-*   **Prossimi Passi Immediati:**
-    1.  **Versioning e Repository**: Setup repository GitHub per controllo versione
-    2.  **Setup Produzione**: Migrazione da SQLite a PostgreSQL per ambiente di produzione
-    3.  **Export PDF**: Integrazione sistema di esportazione PDF (WeasyPrint)
-    4.  **Autenticazione Utenti**: Sistema di login/registrazione utenti reali
-    5.  **Deploy & Testing**: Setup ambiente di produzione e testing end-to-end
+        *   ✅ Debugging e risoluzione problemi interattività completato
+    *   ✅ **Repository e Documentazione**:
+        *   ✅ Versioning Git inizializzato e configurato
+        *   ✅ Repository GitHub pubblico: https://github.com/hlessio/app-preventivi-modulari
+        *   ✅ README.md professionale con documentazione completa
+        *   ✅ .gitignore configurato correttamente
+        *   ✅ Struttura progetto pulita e ben organizzata
+*   **Prossimi Passi Immediati - Fase 2: Produzione:**
+    1.  **Database Produzione**: Migrazione da SQLite a PostgreSQL
+    2.  **Export PDF**: Integrazione WeasyPrint per generazione PDF
+    3.  **Sistema Autenticazione**: Login/registrazione utenti reali (sostituire test-user)
+    4.  **Configurazione Ambiente**: .env per variabili ambiente produzione
+    5.  **Deploy Cloud**: Setup Heroku/Railway/DigitalOcean per hosting
+    6.  **Testing**: Suite test automatizzati (pytest)
+    7.  **CI/CD**: Pipeline GitHub Actions per deploy automatico
 *   **Bloccanti / Domande Aperte:**
-    *   [Nessuno al momento - MVP funzionante al 95%]
+    *   [Nessuno - MVP completo e funzionante al 100%]
+    *   [Pronto per fase produzione]
 
 ---
 **Istruzioni per l'Agent AI (Cursor):**
