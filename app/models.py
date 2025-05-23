@@ -1,13 +1,13 @@
-from pydantic import BaseModel, EmailStr, Field, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl
 from typing import List, Optional, Literal
 from uuid import UUID
 import datetime # Import datetime
 
 class Indirizzo(BaseModel):
     via: str
-    cap: str
-    citta: str
-    provincia: str
+    cap: Optional[str] = ""
+    citta: Optional[str] = ""
+    provincia: Optional[str] = ""
     nazione: str = "Italia"
 
 class IntestazioneAzienda(BaseModel):
@@ -16,7 +16,7 @@ class IntestazioneAzienda(BaseModel):
     partita_iva_azienda: str
     codice_fiscale_azienda: Optional[str] = None
     indirizzo_azienda: Indirizzo
-    email_azienda: EmailStr
+    email_azienda: str
     telefono_azienda: Optional[str] = None
     sito_web_azienda: Optional[HttpUrl] = None
 
@@ -25,7 +25,7 @@ class IntestazioneCliente(BaseModel):
     partita_iva: Optional[str] = None
     codice_fiscale: Optional[str] = None
     indirizzo: Indirizzo
-    email: Optional[EmailStr] = None
+    email: Optional[str] = None
     telefono: Optional[str] = None
     referente: Optional[str] = None
 

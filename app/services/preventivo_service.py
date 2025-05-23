@@ -17,7 +17,7 @@ class PreventivoService:
         Salva un nuovo preventivo nel database.
         """
         # Converti il modello Pydantic in dizionario per salvarlo come JSON
-        preventivo_json = preventivo_data.model_dump()
+        preventivo_json = preventivo_data.model_dump(mode='json')
         
         # Crea il record del preventivo
         db_preventivo = Preventivo(
@@ -48,7 +48,7 @@ class PreventivoService:
             return None
         
         # Aggiorna i dati
-        preventivo_json = preventivo_data.model_dump()
+        preventivo_json = preventivo_data.model_dump(mode='json')
         db_preventivo.numero_preventivo = preventivo_data.metadati_preventivo.numero_preventivo
         db_preventivo.oggetto_preventivo = preventivo_data.metadati_preventivo.oggetto_preventivo
         db_preventivo.stato_preventivo = preventivo_data.metadati_preventivo.stato_preventivo

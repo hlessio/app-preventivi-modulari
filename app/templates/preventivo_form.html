@@ -136,13 +136,48 @@
                                class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                                placeholder="Nome del referente">
                     </div>
-                    <div>
+                    <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Indirizzo</label>
-                        <input type="text" 
-                               x-model="formData.intestazione_cliente.indirizzo"
-                               @input="updateAnteprima()"
-                               class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                               placeholder="Via, Città, CAP">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                            <div class="md:col-span-2">
+                                <input type="text" 
+                                       x-model="formData.intestazione_cliente.indirizzo_via"
+                                       @input="updateAnteprima()"
+                                       class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                       placeholder="Via e numero civico">
+                            </div>
+                            <div>
+                                <input type="text" 
+                                       x-model="formData.intestazione_cliente.indirizzo_cap"
+                                       @input="updateAnteprima()"
+                                       class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                       placeholder="CAP">
+                            </div>
+                            <div>
+                                <input type="text" 
+                                       x-model="formData.intestazione_cliente.indirizzo_citta"
+                                       @input="updateAnteprima()"
+                                       class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                       placeholder="Città">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                            <div>
+                                <input type="text" 
+                                       x-model="formData.intestazione_cliente.indirizzo_provincia"
+                                       @input="updateAnteprima()"
+                                       class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                       placeholder="Provincia (es. RM)">
+                            </div>
+                            <div>
+                                <input type="text" 
+                                       x-model="formData.intestazione_cliente.indirizzo_nazione"
+                                       @input="updateAnteprima()"
+                                       value="Italia"
+                                       class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                       placeholder="Nazione">
+                            </div>
+                        </div>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
@@ -383,7 +418,11 @@
                 intestazione_cliente: {
                     ragione_sociale: '',
                     persona_riferimento: '',
-                    indirizzo: '',
+                    indirizzo_via: '',
+                    indirizzo_cap: '',
+                    indirizzo_citta: '',
+                    indirizzo_provincia: '',
+                    indirizzo_nazione: 'Italia',
                     email: '',
                     telefono: '',
                     partita_iva: ''
@@ -495,11 +534,11 @@
                         nome_cliente: this.formData.intestazione_cliente.ragione_sociale || '',
                         partita_iva: this.formData.intestazione_cliente.partita_iva || null,
                         indirizzo: {
-                            via: this.formData.intestazione_cliente.indirizzo || '',
-                            cap: '',
-                            citta: '',
-                            provincia: '',
-                            nazione: 'Italia'
+                            via: this.formData.intestazione_cliente.indirizzo_via || '',
+                            cap: this.formData.intestazione_cliente.indirizzo_cap || '',
+                            citta: this.formData.intestazione_cliente.indirizzo_citta || '',
+                            provincia: this.formData.intestazione_cliente.indirizzo_provincia || '',
+                            nazione: this.formData.intestazione_cliente.indirizzo_nazione || 'Italia'
                         },
                         email: this.formData.intestazione_cliente.email || null,
                         telefono: this.formData.intestazione_cliente.telefono || null,
