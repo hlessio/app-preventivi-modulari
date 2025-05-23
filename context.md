@@ -23,7 +23,7 @@ Sviluppare un'applicazione web per la generazione di documenti (inizialmente pre
     *   [X] Backend: Validazione input con Pydantic. (Modelli Pydantic creati in `app/models.py` e integrati nell'endpoint `/preventivo/visualizza`)
     *   [X] Backend: Logica di calcolo per totali e subtotali. (Implementato in `app/services/preventivo_calculator.py`)
     *   [X] Database: Schemi DB, modelli per utenti, moduli, documenti. (SQLAlchemy + SQLite funzionante, servizio CRUD completo)
-    *   [ ] Frontend: Form input per moduli chiave, interattività tabella preventivo con HTMX.
+    *   [X] Frontend: Form input per moduli chiave, interattività tabella preventivo con HTMX. (Layout form preventivi con sidebar e anteprima full-page implementato)
     *   [X] Moduli Chiave Preventivo: `intestazione-azienda`, `intestazione-cliente`, `tabella-preventivo`, `condizioni-generali`, `footer-preventivo`. (Schemi e template HTML/Jinja2 completamente funzionanti)
     *   [X] Schemi JSON per Moduli Chiave: Definiti e pronti per essere usati. (Completato in Fase 0, integrati in Pydantic)
 *   **Fase 2:** Integrazione LLM - Livello 1 (Automazione Input) - *Futura*
@@ -31,37 +31,43 @@ Sviluppare un'applicazione web per la generazione di documenti (inizialmente pre
 
 ---
 **STATO ATTUALE DELLO SVILUPPO (Aggiornare regolarmente):**
-*   **Data Ultimo Aggiornamento:** 2024-12-19
-*   **Fase Corrente:** Fase 1 - MVP - Preventivatore Manuale Modulare (LLM-Ready) - **COMPLETATA AL 100%**
-*   **Step Attuale:** ✅ **MILESTONE COMPLETO** - MVP funzionante e versionato su GitHub:
-    *   ✅ **Backend core per preventivi pienamente funzionante**
-    *   ✅ Modelli Pydantic completi (`app/models.py`) integrati e funzionanti
-    *   ✅ Logica di calcolo totali/subtotali implementata (`app/services/preventivo_calculator.py`)
-    *   ✅ Interazione database completa (SQLAlchemy + SQLite per testing, pronto per PostgreSQL)
-    *   ✅ Endpoint API completi: POST `/preventivo/visualizza`, GET `/preventivo/{id}/visualizza`, `/preventivo/{id}`, `/preventivi`, POST `/preventivo/salva`
-    *   ✅ Template Jinja2 completamente funzionanti con numerazione righe corretta
-    *   ✅ Sistema di rendering HTML completo e testato (sia da POST che da DB)
-    *   ✅ Servizio preventivi con CRUD operations completo (`app/services/preventivo_service.py`)
-    *   ✅ **Frontend completo implementato**:
+*   **Data Ultimo Aggiornamento:** 2024-05-18 (Data odierna fittizia per l'esempio)
+*   **Fase Corrente:** Inizio Fase 2 - Produzione
+*   **Step Attuale:** ✅ **Export PDF con WeasyPrint Completato**
+    *   ✅ **Backend core per preventivi pienamente funzionante** (dalla Fase 1)
+    *   ✅ Modelli Pydantic completi (`app/models.py`) integrati e funzionanti (dalla Fase 1)
+    *   ✅ Logica di calcolo totali/subtotali implementata (`app/services/preventivo_calculator.py`) (dalla Fase 1)
+    *   ✅ Interazione database completa (SQLAlchemy + SQLite per testing, pronto per PostgreSQL, fix serializzazione UUID) (dalla Fase 1)
+    *   ✅ Endpoint API completi: POST `/preventivo/visualizza`, GET `/preventivo/{id}/visualizza`, `/preventivo/{id}`, `/preventivi`, POST `/preventivo/salva` (dalla Fase 1)
+    *   ✅ Template Jinja2 completamente funzionanti con numerazione righe corretta (dalla Fase 1)
+    *   ✅ Sistema di rendering HTML completo e testato (sia da POST che da DB) (dalla Fase 1)
+    *   ✅ Servizio preventivi con CRUD operations completo (`app/services/preventivo_service.py`) (dalla Fase 1)
+    *   ✅ **Frontend completo implementato** (dalla Fase 1):\
         *   ✅ Dashboard interattiva con lista preventivi, filtri e ricerca
-        *   ✅ Form preventivi modulari con HTMX per interattività in tempo reale
-        *   ✅ Tabella voci preventivo completamente interattiva (aggiungi/rimuovi/modifica)
+        *   ✅ **Layout pagina creazione/modifica preventivo con sidebar per form e area documento full-page per anteprima live (UX migliorata)**
+        *   ✅ Form preventivi modulari con HTMX per interattività in tempo reale (campi indirizzo cliente separati)
+        *   ✅ Tabella voci preventivo (ora lista voci compatta nella sidebar) completamente interattiva (aggiungi/rimuovi/modifica)
         *   ✅ Calcolo automatico totali in tempo reale
         *   ✅ Anteprima live del documento durante la compilazione
-        *   ✅ Sistema di salvataggio funzionante
+        *   ✅ **Sistema di salvataggio funzionante e robusto** (fix problemi tasto "salva bozza", validazione Pydantic indirizzi, serializzazione UUID)
         *   ✅ Navigazione tra pagine completa
         *   ✅ UI responsiva con Tailwind CSS
         *   ✅ Sistema notifiche utente implementato
         *   ✅ Debugging e risoluzione problemi interattività completato
-    *   ✅ **Repository e Documentazione**:
+    *   ✅ **Nuova Funzionalità: Export PDF con WeasyPrint**
+        *   ✅ Servizio `PDFExportService` implementato (`app/services/pdf_export_service.py`)
+        *   ✅ Template HTML dedicato `preventivo_pdf.html` con CSS ottimizzato per A4
+        *   ✅ Endpoint API: `POST /preventivo/pdf` e `GET /preventivo/{id}/pdf`
+        *   ✅ Integrazione UI nella dashboard e nel form preventivo per scaricare PDF
+        *   ✅ Risoluzione problemi di dipendenze WeasyPrint (macOS) e layout PDF.
+        *   ✅ Script di test `test_pdf.py` e `quick_pdf_test.py` creati e funzionanti.
+        *   ✅ Documentazione `README_PDF_EXPORT.md` creata.
+        *   ✅ `.gitignore` aggiornato per i file di test PDF.
+*   **Repository e Documentazione**:\
         *   ✅ Versioning Git inizializzato e configurato
-        *   ✅ Repository GitHub pubblico: https://github.com/hlessio/app-preventivi-modulari
-        *   ✅ README.md professionale con documentazione completa
-        *   ✅ .gitignore configurato correttamente
-        *   ✅ Struttura progetto pulita e ben organizzata
 *   **Prossimi Passi Immediati - Fase 2: Produzione:**
-    1.  **Database Produzione**: Migrazione da SQLite a PostgreSQL
-    2.  **Export PDF**: Integrazione WeasyPrint per generazione PDF
+    1.  ✅ **Export PDF**: Integrazione WeasyPrint per generazione PDF - **COMPLETATO**
+    2.  **Database Produzione**: Migrazione da SQLite a PostgreSQL
     3.  **Sistema Autenticazione**: Login/registrazione utenti reali (sostituire test-user)
     4.  **Configurazione Ambiente**: .env per variabili ambiente produzione
     5.  **Deploy Cloud**: Setup Heroku/Railway/DigitalOcean per hosting
@@ -79,7 +85,7 @@ Sviluppare un'applicazione web per la generazione di documenti (inizialmente pre
 *   Se il codice che stiamo scrivendo o le decisioni che stiamo prendendo sembrano deviare significativamente dall'architettura o dagli obiettivi qui descritti, per favore segnalamelo.
 *   Il tuo contributo nel mantenere questo contesto aggiornato è prezioso!
 
-**Parole Chiave per Ricerca Veloce:** `Architettura JSON`, `JSON Master`, `JSON Modulare`, `HTMX`, `Jinja2`, `MVP Manuale`, `LLM-Ready`.
+**Parole Chiave per Ricerca Veloce:** `Architettura JSON`, `JSON Master`, `JSON Modulare`, `HTMX`, `Jinja2`, `MVP Manuale`, `LLM-Ready`, `Sidebar Layout`.
 ---
 
 **Come Usarlo con Cursor:**

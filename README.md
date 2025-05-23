@@ -105,7 +105,7 @@ Questa architettura facilita l'integrazione futura di **Large Language Models** 
 
 ### 🚧 Fase 2: Produzione
 - [ ] Setup PostgreSQL
-- [ ] Export PDF con WeasyPrint
+- [X] Export PDF con WeasyPrint
 - [ ] Sistema autenticazione utenti
 - [ ] Deploy produzione
 

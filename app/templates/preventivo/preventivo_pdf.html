@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Preventivo {{ metadati_preventivo.numero_preventivo }} - {{ azienda_emittente.nome_azienda }}</title>
+    <style>
+        /* Stili base ottimizzati per PDF */
+        body { 
+            font-family: 'DejaVu Sans', Arial, sans-serif; 
+            margin: 0; 
+            padding: 0; 
+            color: #333; 
+            font-size: 11px;
+            line-height: 1.3;
+        }
+        
+        .container { 
+            width: 100%; 
+            margin: 0; 
+            padding: 0; 
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #2c3e50;
+        }
+        
+        .company-info {
+            flex: 1;
+            max-width: 70%;
+        }
+        
+        .company-logo {
+            max-width: 100px;
+            max-height: 50px;
+            margin-left: 15px;
+        }
+        
+        section {
+            margin-bottom: 15px;
+            page-break-inside: avoid;
+        }
+        
+        h1, h2, h3 { 
+            color: #2c3e50; 
+            margin-top: 0;
+            margin-bottom: 8px;
+        }
+        
+        h1 { font-size: 20px; margin-bottom: 4px; }
+        h2 { font-size: 16px; margin-bottom: 8px; }
+        h3 { font-size: 13px; margin-bottom: 6px; }
+        
+        p { 
+            margin: 3px 0; 
+            font-size: 11px;
+        }
+        
+        strong {
+            font-weight: bold;
+        }
+        
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-bottom: 12px;
+            page-break-inside: avoid;
+            table-layout: fixed;
+        }
+        
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 6px; 
+            text-align: left; 
+            font-size: 10px;
+            vertical-align: top;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        th { 
+            background-color: #f8f9fa; 
+            font-weight: bold;
+            font-size: 9px;
+        }
+        
+        .tabella-prodotti th:nth-child(1) { width: 8%; }
+        .tabella-prodotti th:nth-child(2) { width: 42%; }
+        .tabella-prodotti th:nth-child(3) { width: 8%; }
+        .tabella-prodotti th:nth-child(4) { width: 8%; }
+        .tabella-prodotti th:nth-child(5) { width: 17%; }
+        .tabella-prodotti th:nth-child(6) { width: 17%; }
+        
+        .tabella-prodotti td:nth-child(1) { width: 8%; }
+        .tabella-prodotti td:nth-child(2) { width: 42%; }
+        .tabella-prodotti td:nth-child(3) { width: 8%; }
+        .tabella-prodotti td:nth-child(4) { width: 8%; }
+        .tabella-prodotti td:nth-child(5) { width: 17%; }
+        .tabella-prodotti td:nth-child(6) { width: 17%; }
+        
+        .totals { 
+            float: right; 
+            width: 250px;
+            clear: both;
+            margin-top: 15px;
+        }
+        
+        .totals td { 
+            text-align: right; 
+            font-weight: bold;
+            font-size: 10px;
+            padding: 4px;
+        }
+        
+        .text-right { 
+            text-align: right; 
+        }
+        
+        .text-center {
+            text-align: center;
+        }
+        
+        .notes { 
+            white-space: pre-wrap; 
+            font-size: 9px;
+            background-color: #f8f9fa;
+            padding: 8px;
+            border-left: 3px solid #2c3e50;
+            margin-top: 8px;
+            word-wrap: break-word;
+        }
+        
+        .cliente-box {
+            background-color: #f8f9fa;
+            padding: 12px;
+            border-left: 3px solid #2c3e50;
+            margin-bottom: 12px;
+        }
+        
+        .metadati-box {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .metadati-left, .metadati-right {
+            flex: 1;
+        }
+        
+        /* Evita interruzioni di pagina indesiderate */
+        .totals, .condizioni, .footer {
+            page-break-inside: avoid;
+        }
+        
+        footer {
+            margin-top: 20px;
+            padding-top: 12px;
+            border-top: 1px solid #ddd;
+            font-size: 9px;
+            color: #666;
+        }
+        
+        /* Numerazione righe tabella */
+        .numero-riga {
+            text-align: center;
+            width: 8%;
+            background-color: #f8f9fa;
+            font-size: 9px;
+        }
+        
+        /* Descrizioni più compatte */
+        .descrizione-compatta {
+            line-height: 1.2;
+            font-size: 9px;
+        }
+        
+        /* Prezzi più compatti */
+        .prezzo {
+            font-size: 9px;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Intestazione Azienda -->
+        <header>
+            <div class="company-info">
+                <h1>{{ azienda_emittente.nome_azienda }}</h1>
+                {% if azienda_emittente.indirizzo_azienda %}
+                <p>{{ azienda_emittente.indirizzo_azienda.via }}</p>
+                <p>{{ azienda_emittente.indirizzo_azienda.cap }} {{ azienda_emittente.indirizzo_azienda.citta }} ({{ azienda_emittente.indirizzo_azienda.provincia }})</p>
+                {% endif %}
+                {% if azienda_emittente.partita_iva_azienda %}
+                <p><strong>P.IVA:</strong> {{ azienda_emittente.partita_iva_azienda }}</p>
+                {% endif %}
+                {% if azienda_emittente.codice_fiscale_azienda %}
+                <p><strong>Cod. Fiscale:</strong> {{ azienda_emittente.codice_fiscale_azienda }}</p>
+                {% endif %}
+                {% if azienda_emittente.email_azienda %}
+                <p><strong>Email:</strong> {{ azienda_emittente.email_azienda }}</p>
+                {% endif %}
+                {% if azienda_emittente.telefono_azienda %}
+                <p><strong>Tel:</strong> {{ azienda_emittente.telefono_azienda }}</p>
+                {% endif %}
+            </div>
+            {% if azienda_emittente.logo_url %}
+            <div class="logo-container">
+                <img src="{{ azienda_emittente.logo_url }}" alt="Logo {{ azienda_emittente.nome_azienda }}" class="company-logo">
+            </div>
+            {% endif %}
+        </header>
+
+        <!-- Metadati Preventivo -->
+        <section id="metadati">
+            <div class="metadati-box">
+                <div class="metadati-left">
+                    <h2>PREVENTIVO</h2>
+                    <p><strong>Numero:</strong> {{ metadati_preventivo.numero_preventivo }}</p>
+                    <p><strong>Data Emissione:</strong> {{ metadati_preventivo.data_emissione if metadati_preventivo.data_emissione else 'N/D' }}</p>
+                    {% if metadati_preventivo.data_scadenza %}
+                    <p><strong>Data Scadenza:</strong> {{ metadati_preventivo.data_scadenza }}</p>
+                    {% endif %}
+                </div>
+                <div class="metadati-right">
+                    {% if metadati_preventivo.oggetto_preventivo %}
+                    <p><strong>Oggetto:</strong></p>
+                    <p>{{ metadati_preventivo.oggetto_preventivo }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- Cliente Destinatario -->
+        <section id="cliente">
+            <h3>Spett.le Cliente:</h3>
+            <div class="cliente-box">
+                {% if cliente_destinatario.nome_cliente %}
+                <p><strong>{{ cliente_destinatario.nome_cliente }}</strong></p>
+                {% endif %}
+                {% if cliente_destinatario.indirizzo %}
+                <p>{{ cliente_destinatario.indirizzo.via }}</p>
+                <p>{{ cliente_destinatario.indirizzo.cap }} {{ cliente_destinatario.indirizzo.citta }} ({{ cliente_destinatario.indirizzo.provincia }})</p>
+                {% endif %}
+                {% if cliente_destinatario.partita_iva %}
+                <p><strong>P.IVA:</strong> {{ cliente_destinatario.partita_iva }}</p>
+                {% endif %}
+                {% if cliente_destinatario.codice_fiscale %}
+                <p><strong>Cod. Fiscale:</strong> {{ cliente_destinatario.codice_fiscale }}</p>
+                {% endif %}
+                {% if cliente_destinatario.email %}
+                <p><strong>Email:</strong> {{ cliente_destinatario.email }}</p>
+                {% endif %}
+                {% if cliente_destinatario.telefono %}
+                <p><strong>Telefono:</strong> {{ cliente_destinatario.telefono }}</p>
+                {% endif %}
+            </div>
+        </section>
+
+        <!-- Corpo Preventivo -->
+        <section id="corpo-preventivo">
+            <h3>Prodotti/Servizi Offerti</h3>
+            {% if corpo_preventivo and corpo_preventivo.righe %}
+            <table class="tabella-prodotti">
+                <thead>
+                    <tr>
+                        <th class="numero-riga">#</th>
+                        <th>Descrizione</th>
+                        <th class="text-center">Qtà</th>
+                        <th class="text-center">Unità</th>
+                        <th class="text-right">Prezzo Unit.</th>
+                        <th class="text-right">Totale</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for riga in corpo_preventivo.righe %}
+                    <tr>
+                        <td class="numero-riga text-center">{{ loop.index }}</td>
+                        <td class="descrizione-compatta">
+                            <strong>{{ riga.descrizione }}</strong>
+                            {% if riga.note_riga %}
+                            <br><small style="color: #666; font-size: 8px;">{{ riga.note_riga }}</small>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">{{ riga.quantita }}</td>
+                        <td class="text-center">{{ riga.unita_misura }}</td>
+                        <td class="text-right prezzo">€ {{ "%.2f"|format(riga.prezzo_unitario_netto) }}</td>
+                        <td class="text-right prezzo">€ {{ "%.2f"|format(riga.subtotale_riga_netto or (riga.quantita * riga.prezzo_unitario_netto * (1 - (riga.sconto_riga_percentuale or 0)/100))) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p><em>Nessuna voce inserita nel preventivo.</em></p>
+            {% endif %}
+        </section>
+
+        <!-- Totali -->
+        <section id="totali">
+            <div class="totals">
+                <table>
+                    <tr>
+                        <td><strong>Subtotale:</strong></td>
+                        <td>€ {{ "%.2f"|format(dettagli_totali.totale_imponibile_netto) }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>IVA:</strong></td>
+                        <td>€ {{ "%.2f"|format(dettagli_totali.totale_iva) }}</td>
+                    </tr>
+                    <tr style="border-top: 2px solid #2c3e50;">
+                        <td><strong>TOTALE GENERALE:</strong></td>
+                        <td><strong>€ {{ "%.2f"|format(dettagli_totali.totale_generale_lordo) }}</strong></td>
+                    </tr>
+                </table>
+            </div>
+            <div style="clear: both;"></div>
+        </section>
+
+        <!-- Condizioni Generali -->
+        {% if condizioni_contrattuali and condizioni_contrattuali.testo_condizioni %}
+        <section id="condizioni">
+            <h3>Condizioni Generali</h3>
+            <div class="notes">{{ condizioni_contrattuali.testo_condizioni }}</div>
+        </section>
+        {% endif %}
+
+        <!-- Footer -->
+        <footer>
+            {% if elementi_footer %}
+                {% if elementi_footer.note_finali %}
+                <div class="notes">
+                    <strong>Note:</strong><br>
+                    {{ elementi_footer.note_finali }}
+                </div>
+                {% endif %}
+                {% if elementi_footer.dati_pagamento %}
+                <p style="margin-top: 15px;"><strong>Modalità di pagamento:</strong> {{ elementi_footer.dati_pagamento }}</p>
+                {% endif %}
+                {% if elementi_footer.validita_preventivo %}
+                <p style="margin-top: 10px;"><strong>Validità:</strong> {{ elementi_footer.validita_preventivo }}</p>
+                {% endif %}
+                {% if elementi_footer.firma_azienda %}
+                <p style="margin-top: 10px;"><strong>Firma:</strong> {{ elementi_footer.firma_azienda }}</p>
+                {% endif %}
+            {% endif %}
+            
+            <div style="margin-top: 20px; text-align: center; font-size: 9px; color: #999;">
+                Preventivo generato il {{ "now"|strftime("%d/%m/%Y alle %H:%M") }}
+            </div>
+        </footer>
+    </div>
+</body>
+</html> 

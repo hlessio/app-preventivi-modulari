@@ -67,6 +67,12 @@
                     Anteprima
                 </button>
 
+                <button x-on:click="scaricaPdf()" 
+                        class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
+                    <i class="fas fa-file-pdf mr-2"></i>
+                    Scarica PDF
+                </button>
+
                 <a href="/" 
                    class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                     <i class="fas fa-arrow-left mr-2"></i>
@@ -596,6 +602,57 @@
             anteprimaPreventivo() {
                 // Genera l'anteprima nella colonna di destra
                 this.rigeneraAnteprima();
+            },
+
+            async scaricaPdf() {
+                try {
+                    const preventivo_id = '{{ preventivo_id or "" }}';
+                    
+                    if (preventivo_id) {
+                        // Preventivo esistente - usa endpoint GET
+                        const response = await fetch(`/preventivo/${preventivo_id}/pdf?user_id=test-user`);
+                        
+                        if (response.ok) {
+                            const blob = await response.blob();
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `preventivo_${this.formData.numero_preventivo || preventivo_id}.pdf`;
+                            a.click();
+                            window.URL.revokeObjectURL(url);
+                            showNotification('PDF scaricato con successo!');
+                        } else {
+                            throw new Error(`Errore ${response.status}: ${await response.text()}`);
+                        }
+                    } else {
+                        // Preventivo nuovo - usa endpoint POST con dati attuali
+                        const data = this.preparaData();
+                        
+                        const response = await fetch('/preventivo/pdf', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(data)
+                        });
+
+                        if (response.ok) {
+                            const blob = await response.blob();
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `preventivo_${this.formData.numero_preventivo || 'nuovo'}.pdf`;
+                            a.click();
+                            window.URL.revokeObjectURL(url);
+                            showNotification('PDF generato e scaricato con successo!');
+                        } else {
+                            throw new Error(`Errore ${response.status}: ${await response.text()}`);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Errore nel download del PDF:', error);
+                    showNotification(`Errore nel download del PDF: ${error.message}`, 'error');
+                }
             }
         }
     }

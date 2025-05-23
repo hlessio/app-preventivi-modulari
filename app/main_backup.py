@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, Depends, HTTPException, Query
-from fastapi.responses import HTMLResponse, JSONResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
 from sqlalchemy.orm import Session
@@ -9,7 +9,6 @@ from typing import List
 from .models import PreventivoMasterModel
 from .services.preventivo_calculator import calcola_totali_preventivo
 from .services.preventivo_service import PreventivoService
-from .services.pdf_export_service import PDFExportService
 from .database import get_db, engine, Base
 from .db_models import Preventivo
 
@@ -26,9 +25,6 @@ app = FastAPI(title="App Preventivi Modulari")
 # Assicurati che la directory 'templates' sia al livello corretto rispetto a BASE_DIR
 # In questo caso, se main.py è in app/, e templates è in app/templates/
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
-
-# Configurazione del servizio PDF
-pdf_service = PDFExportService(BASE_DIR / "templates")
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -195,68 +191,6 @@ async def lista_preventivi(
         })
     
     return {"preventivi": preventivi_json}
-
-# Endpoint per export PDF da dati POST
-@app.post("/preventivo/pdf", response_class=Response)
-async def genera_pdf_preventivo(preventivo_data: PreventivoMasterModel):
-    """
-    Genera un PDF del preventivo a partire dai dati forniti.
-    Accetta un JSON con i dati del preventivo e restituisce il PDF.
-    """
-    try:
-        # Genera il PDF usando il servizio
-        pdf_content = pdf_service.genera_pdf_preventivo(preventivo_data)
-        
-        # Crea il nome del file PDF
-        numero_preventivo = preventivo_data.metadati_preventivo.numero_preventivo or "preventivo"
-        filename = f"preventivo_{numero_preventivo}.pdf"
-        
-        return Response(
-            content=pdf_content,
-            media_type="application/pdf",
-            headers={
-                "Content-Disposition": f"attachment; filename={filename}"
-            }
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Errore nella generazione del PDF: {str(e)}")
-
-# Endpoint per export PDF di un preventivo salvato
-@app.get("/preventivo/{preventivo_id}/pdf", response_class=Response)
-async def scarica_pdf_preventivo(
-    preventivo_id: str,
-    user_id: str = Query(default="test-user", description="ID dell'utente"),
-    db: Session = Depends(get_db)
-):
-    """
-    Scarica il PDF di un preventivo salvato nel database.
-    """
-    try:
-        # Carica il preventivo dal database
-        preventivo_service = PreventivoService(db)
-        preventivo_data = preventivo_service.carica_preventivo(preventivo_id, user_id)
-        
-        if not preventivo_data:
-            raise HTTPException(status_code=404, detail="Preventivo non trovato")
-        
-        # Genera il PDF
-        pdf_content = pdf_service.genera_pdf_preventivo(preventivo_data)
-        
-        # Crea il nome del file PDF
-        numero_preventivo = preventivo_data.metadati_preventivo.numero_preventivo or preventivo_id
-        filename = f"preventivo_{numero_preventivo}.pdf"
-        
-        return Response(
-            content=pdf_content,
-            media_type="application/pdf",
-            headers={
-                "Content-Disposition": f"attachment; filename={filename}"
-            }
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Errore nella generazione del PDF: {str(e)}")
 
 # Esempio di come potresti avviare l'app con Uvicorn da riga di comando:
 # uvicorn app.main:app --reload

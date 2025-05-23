@@ -235,6 +235,12 @@
                                            title="Visualizza">
                                             <i class="fas fa-eye"></i>
                                         </a>
+                                        <a :href="`/preventivo/${preventivo.id}/pdf?user_id=test-user`" 
+                                           class="text-orange-600 hover:text-orange-900" 
+                                           title="Scarica PDF"
+                                           target="_blank">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </a>
                                         <a :href="`/preventivo/${preventivo.id}/modifica`" 
                                            class="text-indigo-600 hover:text-indigo-900" 
                                            title="Modifica">
