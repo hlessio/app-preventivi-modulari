@@ -1,0 +1,77 @@
+{
+    "metadati_preventivo": {
+      "id_preventivo": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      "numero_preventivo": "2024/001",
+      "data_emissione": "2024-07-30",
+      "oggetto_preventivo": "Sviluppo Sito Web E-commerce"
+    },
+    "azienda_emittente": {
+      "nome_azienda": "Tech Solutions S.R.L.",
+      "partita_iva_azienda": "IT12345678901",
+      "indirizzo_azienda": {
+        "via": "Via Roma 10",
+        "cap": "00100",
+        "citta": "Roma",
+        "provincia": "RM",
+        "nazione": "Italia"
+      },
+      "email_azienda": "info@techsolutions.example.com",
+      "telefono_azienda": "061234567"
+    },
+    "cliente_destinatario": {
+      "nome_cliente": "Mario Rossi",
+      "indirizzo": {
+        "via": "Corso Vittorio Emanuele 25",
+        "cap": "20122",
+        "citta": "Milano",
+        "provincia": "MI",
+        "nazione": "Italia"
+      },
+      "email": "mario.rossi@example.com"
+    },
+    "corpo_preventivo": {
+      "righe": [
+        {
+          "descrizione": "Analisi e Progettazione",
+          "quantita": 1,
+          "unita_misura": "forfait",
+          "prezzo_unitario_netto": 500,
+          "percentuale_iva": 22,
+          "subtotale_riga_netto": 500,
+          "importo_iva_riga": 110,
+          "subtotale_riga_lordo": 610
+        },
+        {
+          "descrizione": "Sviluppo Frontend",
+          "quantita": 40,
+          "unita_misura": "ore",
+          "prezzo_unitario_netto": 50,
+          "percentuale_iva": 22,
+          "subtotale_riga_netto": 2000,
+          "importo_iva_riga": 440,
+          "subtotale_riga_lordo": 2440
+        }
+      ],
+      "note_tabella": "Tempistiche da concordare."
+    },
+    "dettagli_totali": {
+      "totale_imponibile_netto": 2500,
+      "totale_iva": 550,
+      "totale_generale_lordo": 3050,
+      "riepilogo_iva": [
+          {
+              "aliquota_percentuale": 22,
+              "imponibile_aliquota": 2500,
+              "iva_aliquota": 550
+          }
+      ]
+    },
+    "condizioni_contrattuali": {
+      "testo_condizioni": "Pagamento: 50% alla conferma, 50% alla consegna.\nGaranzia: 12 mesi sui difetti di sviluppo."
+    },
+    "elementi_footer": {
+      "dati_pagamento": "IBAN: IT00X12345123451234567890",
+      "validita_preventivo": "30 giorni dalla data di emissione.",
+      "firma_azienda": "Tech Solutions S.R.L. - L'Amministratore"
+    }
+  }

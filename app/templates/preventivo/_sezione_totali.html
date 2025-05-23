@@ -1,0 +1,55 @@
+{% if dettagli_totali %}
+<div class="totals-section">
+    <table class="totals">
+        <tbody>
+            <tr>
+                <td>Imponibile Netto:</td>
+                <td>{{ "%.2f" % (dettagli_totali.totale_imponibile_netto if dettagli_totali.totale_imponibile_netto is not none else 0) }} €</td>
+            </tr>
+            {% if 'totale_sconti' in dettagli_totali and dettagli_totali.totale_sconti is not none and dettagli_totali.totale_sconti > 0 %}
+            <tr>
+                <td>Sconto Totale:</td>
+                <td>{{ "%.2f" % dettagli_totali.totale_sconti }} €</td>
+            </tr>
+            {% endif %}
+            <tr>
+                <td>IVA Totale:</td>
+                <td>{{ "%.2f" % (dettagli_totali.totale_iva if dettagli_totali.totale_iva is not none else 0) }} €</td>
+            </tr>
+            <tr>
+                <td><strong>Totale Generale Lordo:</strong></td>
+                <td><strong>{{ "%.2f" % (dettagli_totali.totale_generale_lordo if dettagli_totali.totale_generale_lordo is not none else 0) }} €</strong></td>
+            </tr>
+        </tbody>
+    </table>
+
+    {% if dettagli_totali.riepilogo_iva and dettagli_totali.riepilogo_iva | length > 0 %}
+    <div class="vat-summary" style="margin-top: 15px; clear:both;">
+        <h4>Riepilogo IVA:</h4>
+        <table>
+            <thead>
+                <tr>
+                    <th>Aliquota %</th>
+                    <th class="text-right">Imponibile</th>
+                    <th class="text-right">IVA</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for iva_item in dettagli_totali.riepilogo_iva %}
+                <tr>
+                    <td>{{ iva_item.aliquota_percentuale }}%</td>
+                    <td class="text-right">{{ "%.2f" % (iva_item.imponibile_aliquota if iva_item.imponibile_aliquota is not none else 0) }} €</td>
+                    <td class="text-right">{{ "%.2f" % (iva_item.iva_aliquota if iva_item.iva_aliquota is not none else 0) }} €</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+    <div style="clear:both;"></div>
+</div>
+{% else %}
+<div class="totals-section">
+    <p><em>Dettagli totali non disponibili.</em></p>
+</div>
+{% endif %} 

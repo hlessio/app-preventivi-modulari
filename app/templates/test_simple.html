@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Semplice</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">Test di Interazione</h1>
+        
+        <div x-data="{ count: 0 }" class="bg-white p-6 rounded-lg shadow">
+            <p class="mb-4">Questo testo dovrebbe essere selezionabile con il mouse.</p>
+            
+            <button x-on:click="count++" 
+                    class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                Clicca qui: <span x-text="count"></span>
+            </button>
+            
+            <input type="text" 
+                   placeholder="Scrivi qualcosa qui..."
+                   class="mt-4 block w-full border border-gray-300 rounded px-3 py-2">
+        </div>
+        
+        <div class="mt-6">
+            <a href="/" class="text-blue-600 underline">Torna alla Dashboard</a>
+        </div>
+    </div>
+</body>
+</html> 

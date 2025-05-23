@@ -1,0 +1,32 @@
+{% if cliente_destinatario %}
+<div class="client-details">
+    <h4>Spett.le</h4>
+    <p>
+        <strong>{{ cliente_destinatario.nome_cliente }}</strong><br>
+        {% if cliente_destinatario.referente %}
+            Att.ne: {{ cliente_destinatario.referente }}<br>
+        {% endif %}
+        {{ cliente_destinatario.indirizzo.via }}<br>
+        {{ cliente_destinatario.indirizzo.cap }} {{ cliente_destinatario.indirizzo.citta }} ({{ cliente_destinatario.indirizzo.provincia }})<br>
+        {{ cliente_destinatario.indirizzo.nazione }}
+    </p>
+    <p>
+        {% if cliente_destinatario.partita_iva %}
+            P.IVA: {{ cliente_destinatario.partita_iva }}<br>
+        {% endif %}
+        {% if cliente_destinatario.codice_fiscale %}
+            C.F.: {{ cliente_destinatario.codice_fiscale }}<br>
+        {% endif %}
+        {% if cliente_destinatario.email %}
+            Email: {{ cliente_destinatario.email }}<br>
+        {% endif %}
+        {% if cliente_destinatario.telefono %}
+            Tel: {{ cliente_destinatario.telefono }}
+        {% endif %}
+    </p>
+</div>
+{% else %}
+<div class="client-details">
+    <p><em>Dati cliente non disponibili.</em></p>
+</div>
+{% endif %} 

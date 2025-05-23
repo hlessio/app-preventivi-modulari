@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Footer Preventivo",
+  "description": "Schema per il footer del preventivo, contenente informazioni aggiuntive e di chiusura.",
+  "type": "object",
+  "properties": {
+    "dati_pagamento": {
+      "description": "Informazioni per il pagamento (es. IBAN, termini di pagamento).",
+      "type": "string"
+    },
+    "validita_preventivo": {
+      "description": "Periodo di validità dell'offerta (es. '30 giorni dalla data di emissione').",
+      "type": "string"
+    },
+    "note_finali": {
+      "description": "Eventuali note conclusive o ringraziamenti.",
+      "type": "string"
+    },
+    "firma_azienda": {
+        "description": "Spazio o indicazione per la firma dell'azienda.",
+        "type": "string"
+    }
+  }
+} 

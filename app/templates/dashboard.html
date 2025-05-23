@@ -1,0 +1,369 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - App Preventivi{% endblock %}
+
+{% block content %}
+<div x-data="dashboardData()" class="px-4 py-6">
+    <!-- Header con Stats -->
+    <div class="mb-8">
+        <div class="md:flex md:items-center md:justify-between">
+            <div class="min-w-0 flex-1">
+                <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+                    Dashboard Preventivi
+                </h2>
+                <p class="mt-1 text-sm text-gray-500">
+                    Gestisci i tuoi preventivi e crea nuovi documenti
+                </p>
+            </div>
+            <div class="mt-4 flex md:ml-4 md:mt-0">
+                <a href="/preventivo/nuovo" 
+                   class="inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500">
+                    <i class="fas fa-plus mr-2"></i>
+                    Nuovo Preventivo
+                </a>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4" id="stats-container">
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow border border-gray-200">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-file-invoice text-blue-600 text-2xl"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">
+                                Preventivi Totali
+                            </dt>
+                            <dd class="text-lg font-medium text-gray-900" x-text="stats.totali || 0">
+                                0
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow border border-gray-200">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-clock text-yellow-600 text-2xl"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">
+                                In Attesa
+                            </dt>
+                            <dd class="text-lg font-medium text-gray-900" x-text="stats.in_attesa || 0">
+                                0
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow border border-gray-200">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-check-circle text-green-600 text-2xl"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">
+                                Approvati
+                            </dt>
+                            <dd class="text-lg font-medium text-gray-900" x-text="stats.approvati || 0">
+                                0
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow border border-gray-200">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-euro-sign text-green-600 text-2xl"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">
+                                Valore Totale
+                            </dt>
+                            <dd class="text-lg font-medium text-gray-900" x-text="formatCurrency(stats.valore_totale || 0)">
+                                €0,00
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtri e Ricerca -->
+    <div class="mb-6 bg-white rounded-lg shadow border border-gray-200 p-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <!-- Ricerca -->
+            <div class="md:col-span-2">
+                <label for="search" class="block text-sm font-medium text-gray-700">Ricerca</label>
+                <div class="mt-1 relative">
+                    <input 
+                        type="text" 
+                        name="search" 
+                        id="search"
+                        x-model="filters.search"
+                        @input.debounce.500ms="loadPreventivi()"
+                        class="block w-full rounded-md border-gray-300 pl-10 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        placeholder="Cerca per numero, cliente, oggetto..."
+                    >
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-search text-gray-400"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtro Stato -->
+            <div>
+                <label for="stato" class="block text-sm font-medium text-gray-700">Stato</label>
+                <select 
+                    id="stato" 
+                    name="stato"
+                    x-model="filters.stato"
+                    @change="loadPreventivi()"
+                    class="mt-1 block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                >
+                    <option value="">Tutti gli stati</option>
+                    <option value="bozza">Bozza</option>
+                    <option value="inviato">Inviato</option>
+                    <option value="approvato">Approvato</option>
+                    <option value="rifiutato">Rifiutato</option>
+                    <option value="scaduto">Scaduto</option>
+                </select>
+            </div>
+
+            <!-- Ordinamento -->
+            <div>
+                <label for="ordinamento" class="block text-sm font-medium text-gray-700">Ordina per</label>
+                <select 
+                    id="ordinamento" 
+                    name="ordinamento"
+                    x-model="filters.sort"
+                    @change="loadPreventivi()"
+                    class="mt-1 block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                >
+                    <option value="created_at_desc">Più recenti</option>
+                    <option value="created_at_asc">Più vecchi</option>
+                    <option value="numero_desc">Numero decrescente</option>
+                    <option value="numero_asc">Numero crescente</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista Preventivi -->
+    <div class="bg-white shadow border border-gray-200 rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Preventivi</h3>
+        </div>
+        
+        <div id="preventivi-container">
+            <!-- Loading placeholder -->
+            <div class="animate-pulse p-6" x-show="loading">
+                <div class="space-y-4">
+                    <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+                    <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+                    <div class="h-4 bg-gray-200 rounded w-2/3"></div>
+                </div>
+            </div>
+
+            <!-- Preventivi List -->
+            <div x-show="!loading">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Numero / Cliente
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Oggetto
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Stato
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Data
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Valore
+                                </th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Azioni
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <template x-for="preventivo in preventivi" :key="preventivo.id">
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div>
+                                            <div class="text-sm font-medium text-gray-900" x-text="preventivo.numero_preventivo">
+                                            </div>
+                                            <div class="text-sm text-gray-500" x-text="preventivo.cliente || 'N/A'">
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="text-sm text-gray-900" x-text="preventivo.oggetto_preventivo || 'N/A'">
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
+                                              :class="getStatoClass(preventivo.stato_preventivo)"
+                                              x-text="preventivo.stato_preventivo || 'bozza'">
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <span x-text="formatDate(preventivo.created_at)"></span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <span x-text="formatCurrency(preventivo.valore || 0)"></span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                                        <a :href="`/preventivo/${preventivo.id}/visualizza?user_id=test-user`" 
+                                           class="text-blue-600 hover:text-blue-900" 
+                                           title="Visualizza">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a :href="`/preventivo/${preventivo.id}/modifica`" 
+                                           class="text-indigo-600 hover:text-indigo-900" 
+                                           title="Modifica">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button @click="duplicaPreventivo(preventivo.id)" 
+                                                class="text-green-600 hover:text-green-900" 
+                                                title="Duplica">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                        <button @click="eliminaPreventivo(preventivo.id)" 
+                                                class="text-red-600 hover:text-red-900" 
+                                                title="Elimina">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty State -->
+                <div x-show="!loading && preventivi.length === 0" class="text-center py-12">
+                    <i class="fas fa-file-invoice text-gray-300 text-6xl mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Nessun preventivo trovato</h3>
+                    <p class="text-gray-500 mb-6">Inizia creando il tuo primo preventivo</p>
+                    <a href="/preventivo/nuovo" 
+                       class="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500">
+                        <i class="fas fa-plus mr-2"></i>
+                        Crea Primo Preventivo
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function dashboardData() {
+        return {
+            loading: true,
+            preventivi: [],
+            stats: {
+                totali: 0,
+                in_attesa: 0,
+                approvati: 0,
+                valore_totale: 0
+            },
+            filters: {
+                search: '',
+                stato: '',
+                sort: 'created_at_desc'
+            },
+
+            init() {
+                this.loadPreventivi();
+                this.loadStats();
+            },
+
+            async loadPreventivi() {
+                try {
+                    this.loading = true;
+                    const params = new URLSearchParams({
+                        user_id: 'test-user', // TODO: Sostituire con user ID reale
+                        ...this.filters
+                    });
+                    
+                    const response = await fetch(`/preventivi?${params}`);
+                    const data = await response.json();
+                    
+                    this.preventivi = data.preventivi || [];
+                } catch (error) {
+                    console.error('Errore nel caricamento preventivi:', error);
+                    showNotification('Errore nel caricamento dei preventivi', 'error');
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            async loadStats() {
+                // TODO: Implementare endpoint per le statistiche
+                // Per ora calcoliamo dalle preventivi caricati
+                this.stats = {
+                    totali: this.preventivi.length,
+                    in_attesa: this.preventivi.filter(p => p.stato_preventivo === 'inviato').length,
+                    approvati: this.preventivi.filter(p => p.stato_preventivo === 'approvato').length,
+                    valore_totale: this.preventivi.reduce((sum, p) => sum + (p.valore || 0), 0)
+                };
+            },
+
+            getStatoClass(stato) {
+                const classes = {
+                    'bozza': 'bg-gray-100 text-gray-800',
+                    'inviato': 'bg-blue-100 text-blue-800',
+                    'approvato': 'bg-green-100 text-green-800',
+                    'rifiutato': 'bg-red-100 text-red-800',
+                    'scaduto': 'bg-yellow-100 text-yellow-800'
+                };
+                return classes[stato] || classes['bozza'];
+            },
+
+            formatDate(dateString) {
+                if (!dateString) return '';
+                return new Date(dateString).toLocaleDateString('it-IT');
+            },
+
+            async duplicaPreventivo(id) {
+                if (!confirm('Sei sicuro di voler duplicare questo preventivo?')) return;
+                
+                try {
+                    // TODO: Implementare endpoint per duplicazione
+                    showNotification('Funzionalità in sviluppo', 'error');
+                } catch (error) {
+                    showNotification('Errore nella duplicazione', 'error');
+                }
+            },
+
+            async eliminaPreventivo(id) {
+                if (!confirm('Sei sicuro di voler eliminare questo preventivo? L\'azione non può essere annullata.')) return;
+                
+                try {
+                    // TODO: Implementare endpoint per eliminazione
+                    showNotification('Funzionalità in sviluppo', 'error');
+                } catch (error) {
+                    showNotification('Errore nell\'eliminazione', 'error');
+                }
+            }
+        }
+    }
+</script>
+{% endblock %} 

@@ -1,0 +1,9 @@
+{% if condizioni_contrattuali and condizioni_contrattuali.testo_condizioni %}
+<div class="conditions-text notes">
+    {{ condizioni_contrattuali.testo_condizioni }}
+</div>
+{% else %}
+<div class="conditions-text">
+    <p><em>Condizioni generali non specificate.</em></p>
+</div>
+{% endif %} 

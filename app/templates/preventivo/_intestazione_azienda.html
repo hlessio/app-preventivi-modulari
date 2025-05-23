@@ -1,0 +1,30 @@
+{% if azienda_emittente %}
+<div class="company-details">
+    <h3>{{ azienda_emittente.nome_azienda }}</h3>
+    {% if azienda_emittente.logo_url %}
+        <img src="{{ azienda_emittente.logo_url }}" alt="Logo {{ azienda_emittente.nome_azienda }}" class="company-logo">
+    {% endif %}
+    <p>
+        {{ azienda_emittente.indirizzo_azienda.via }}<br>
+        {{ azienda_emittente.indirizzo_azienda.cap }} {{ azienda_emittente.indirizzo_azienda.citta }} ({{ azienda_emittente.indirizzo_azienda.provincia }})<br>
+        {{ azienda_emittente.indirizzo_azienda.nazione }}
+    </p>
+    <p>
+        P.IVA: {{ azienda_emittente.partita_iva_azienda }}
+        {% if azienda_emittente.codice_fiscale_azienda and azienda_emittente.codice_fiscale_azienda != azienda_emittente.partita_iva_azienda %}
+            <br>C.F.: {{ azienda_emittente.codice_fiscale_azienda }}
+        {% endif %}
+    </p>
+    <p>
+        Email: {{ azienda_emittente.email_azienda }}<br>
+        Tel: {{ azienda_emittente.telefono_azienda if azienda_emittente.telefono_azienda else 'N/D' }}
+        {% if azienda_emittente.sito_web_azienda %}
+            <br>Web: <a href="{{ azienda_emittente.sito_web_azienda }}">{{ azienda_emittente.sito_web_azienda }}</a>
+        {% endif %}
+    </p>
+</div>
+{% else %}
+<div class="company-details">
+    <p><em>Dati azienda emittente non disponibili.</em></p>
+</div>
+{% endif %} 

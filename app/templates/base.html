@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}App Preventivi Modulari{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- Font Awesome per icone -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <style>
+        .htmx-indicator {
+            display: none !important;
+            opacity: 0;
+            transition: opacity 200ms ease-in;
+        }
+        .htmx-request .htmx-indicator {
+            display: flex !important;
+            opacity: 1;
+        }
+        .htmx-request.htmx-indicator {
+            display: flex !important;
+            opacity: 1;
+        }
+        /* Animazioni per aggiornamenti HTMX */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-semibold text-gray-900">
+                        <i class="fas fa-file-invoice-dollar text-blue-600 mr-2"></i>
+                        App Preventivi
+                    </h1>
+                </div>
+                <nav class="flex space-x-4">
+                    <a href="/" class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                        <i class="fas fa-home mr-1"></i>Dashboard
+                    </a>
+                    <a href="/preventivo/nuovo" class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700">
+                        <i class="fas fa-plus mr-1"></i>Nuovo Preventivo
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Notification Area -->
+    <div id="notifications" class="fixed top-20 right-4 z-50 space-y-2"></div>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Loading Spinner -->
+    <div id="loading" class="htmx-indicator fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
+            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            <span class="text-gray-700">Caricamento...</span>
+        </div>
+    </div>
+
+    <!-- HTMX Config -->
+    <script>
+        // Configurazione globale HTMX
+        document.body.addEventListener('htmx:configRequest', function(evt) {
+            evt.detail.headers['Content-Type'] = 'application/json';
+        });
+
+        // Notifiche di successo/errore
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `
+                notification ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} 
+                text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2
+                transform transition-all duration-300 translate-x-full
+            `;
+            
+            notification.innerHTML = `
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+                <span>${message}</span>
+                <button onclick="this.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            document.getElementById('notifications').appendChild(notification);
+            
+            // Animazione di entrata
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+            }, 100);
+            
+            // Auto-rimozione dopo 5 secondi
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => notification.remove(), 300);
+            }, 5000);
+        }
+
+        // Event listeners per HTMX
+        document.body.addEventListener('htmx:afterRequest', function(evt) {
+            if (evt.detail.successful) {
+                // Richiesta completata con successo
+                if (evt.detail.xhr.responseURL.includes('/salva')) {
+                    showNotification('Preventivo salvato con successo!');
+                }
+            } else {
+                // Errore nella richiesta
+                showNotification('Si è verificato un errore. Riprova.', 'error');
+            }
+        });
+
+        // Utility per formattare numeri come valuta
+        window.formatCurrency = function(value) {
+            return new Intl.NumberFormat('it-IT', {
+                style: 'currency',
+                currency: 'EUR'
+            }).format(value || 0);
+        };
+
+        // Utility per calcoli in tempo reale
+        window.calcolaRiga = function(quantita, prezzoUnitario, scontoPercentuale = 0) {
+            const subtotale = quantita * prezzoUnitario;
+            const sconto = subtotale * (scontoPercentuale / 100);
+            return subtotale - sconto;
+        };
+    </script>
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html> 

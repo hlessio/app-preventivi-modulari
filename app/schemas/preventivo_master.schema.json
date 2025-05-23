@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Preventivo Master",
+  "description": "Schema JSON master che aggrega tutti i moduli di un preventivo.",
+  "type": "object",
+  "properties": {
+    "metadati_preventivo": {
+      "title": "Metadati del Preventivo",
+      "type": "object",
+      "properties": {
+        "id_preventivo": { "type": "string", "format": "uuid", "description": "ID univoco del preventivo." },
+        "numero_preventivo": { "type": "string", "description": "Numero progressivo del preventivo (es. 2023/001)." },
+        "data_emissione": { "type": "string", "format": "date", "description": "Data di emissione del preventivo." },
+        "data_scadenza": { "type": "string", "format": "date", "description": "Data di scadenza del preventivo (opzionale)." },
+        "oggetto_preventivo": { "type": "string", "description": "Oggetto o descrizione sintetica del preventivo." },
+        "stato_preventivo": { 
+          "type": "string", 
+          "enum": ["bozza", "inviato", "accettato", "rifiutato", "scaduto"],
+          "default": "bozza",
+          "description": "Stato attuale del preventivo."
+        }
+      },
+      "required": ["id_preventivo", "numero_preventivo", "data_emissione", "oggetto_preventivo"]
+    },
+    "azienda_emittente": {
+      "$ref": "intestazione_azienda.schema.json"
+    },
+    "cliente_destinatario": {
+      "$ref": "intestazione_cliente.schema.json"
+    },
+    "corpo_preventivo": {
+      "$ref": "tabella_preventivo.schema.json"
+    },
+    "condizioni_contrattuali": {
+      "$ref": "condizioni_generali.schema.json"
+    },
+    "dettagli_totali": {
+      "$ref": "sezione_totali.schema.json"
+    },
+    "elementi_footer": {
+      "$ref": "footer_preventivo.schema.json"
+    }
+  },
+  "required": [
+    "metadati_preventivo",
+    "azienda_emittente",
+    "cliente_destinatario",
+    "corpo_preventivo",
+    "dettagli_totali"
+  ]
+} 

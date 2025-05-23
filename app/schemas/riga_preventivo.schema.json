@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Riga Preventivo",
+  "description": "Schema per una singola riga all'interno della tabella preventivo.",
+  "type": "object",
+  "properties": {
+    "codice_articolo": {
+      "description": "Codice articolo (opzionale).",
+      "type": "string"
+    },
+    "descrizione": {
+      "description": "Descrizione della voce di preventivo.",
+      "type": "string"
+    },
+    "unita_misura": {
+      "description": "Unità di misura (es. pz, kg, ore).",
+      "type": "string",
+      "default": "pz"
+    },
+    "quantita": {
+      "description": "Quantità.",
+      "type": "number",
+      "default": 1
+    },
+    "prezzo_unitario_netto": {
+      "description": "Prezzo unitario al netto dell'IVA.",
+      "type": "number"
+    },
+    "percentuale_iva": {
+      "description": "Aliquota IVA applicata (es. 22 per 22%).",
+      "type": "number",
+      "default": 22
+    },
+    "importo_iva_riga": {
+        "description": "Importo IVA per la riga (calcolato: prezzo_unitario_netto * quantita * percentuale_iva / 100). Read-only.",
+        "type": "number",
+        "readOnly": true
+    },
+    "subtotale_riga_netto": {
+      "description": "Subtotale per la riga al netto dell'IVA (calcolato: prezzo_unitario_netto * quantita). Read-only.",
+      "type": "number",
+      "readOnly": true
+    },
+    "subtotale_riga_lordo": {
+        "description": "Subtotale per la riga comprensivo di IVA (calcolato: subtotale_riga_netto + importo_iva_riga). Read-only.",
+        "type": "number",
+        "readOnly": true
+    },
+    "sconto_riga_percentuale": {
+        "description": "Percentuale di sconto applicata alla riga (es. 10 per 10%).",
+        "type": "number",
+        "default": 0
+    },
+    "note_riga": {
+      "description": "Eventuali note specifiche per la riga.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "descrizione",
+    "quantita",
+    "prezzo_unitario_netto",
+    "percentuale_iva"
+  ]
+} 

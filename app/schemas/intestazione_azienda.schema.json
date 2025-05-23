@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Intestazione Azienda",
+  "description": "Schema per i dati dell'intestazione dell'azienda che emette il preventivo.",
+  "type": "object",
+  "properties": {
+    "nome_azienda": {
+      "description": "Nome o Ragione Sociale dell'azienda.",
+      "type": "string"
+    },
+    "logo_url": {
+      "description": "URL del logo aziendale.",
+      "type": "string",
+      "format": "uri"
+    },
+    "partita_iva_azienda": {
+      "description": "Partita IVA dell'azienda.",
+      "type": "string"
+    },
+    "codice_fiscale_azienda": {
+      "description": "Codice Fiscale dell'azienda (se applicabile).",
+      "type": "string"
+    },
+    "indirizzo_azienda": {
+      "type": "object",
+      "properties": {
+        "via": { "type": "string" },
+        "cap": { "type": "string" },
+        "citta": { "type": "string" },
+        "provincia": { "type": "string" },
+        "nazione": { "type": "string", "default": "Italia" }
+      },
+      "required": ["via", "cap", "citta", "provincia"]
+    },
+    "email_azienda": {
+      "description": "Indirizzo email dell'azienda.",
+      "type": "string",
+      "format": "email"
+    },
+    "telefono_azienda": {
+      "description": "Numero di telefono dell'azienda.",
+      "type": "string"
+    },
+    "sito_web_azienda": {
+      "description": "Sito web dell'azienda.",
+      "type": "string",
+      "format": "uri"
+    }
+  },
+  "required": [
+    "nome_azienda",
+    "partita_iva_azienda",
+    "indirizzo_azienda",
+    "email_azienda"
+  ]
+} 

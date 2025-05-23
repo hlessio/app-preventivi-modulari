@@ -1,0 +1,34 @@
+{% if corpo_preventivo and corpo_preventivo.righe %}
+<table>
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Descrizione</th>
+            <th class="text-right">Qtà/UM</th>
+            <th class="text-right">Prezzo Un. Netto</th>
+            <th class="text-right">Sconto %</th>
+            <th class="text-right">Subtotale Netto</th>
+            <th class="text-right">IVA %</th>
+            <th class="text-right">Importo IVA</th>
+            <th class="text-right">Subtotale Lordo</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for riga in corpo_preventivo.righe %}
+            {% include "preventivo/_riga_preventivo.html" %}
+        {% else %}
+            <tr>
+                <td colspan="9">Nessuna voce inserita nel preventivo.</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+    {% if corpo_preventivo.note_tabella %}
+    <div class="notes" style="margin-top: 10px;">
+        <strong>Note alla tabella:</strong><br>
+        {{ corpo_preventivo.note_tabella }}
+    </div>
+    {% endif %}
+{% else %}
+<p><em>Tabella voci non disponibile o vuota.</em></p>
+{% endif %} 

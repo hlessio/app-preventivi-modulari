@@ -1,0 +1,27 @@
+{% if elementi_footer %}
+<div class="footer-content">
+    {% if elementi_footer.dati_pagamento %}
+        <h4>Dati per il Pagamento:</h4>
+        <p class="notes">{{ elementi_footer.dati_pagamento }}</p>
+    {% endif %}
+
+    {% if elementi_footer.validita_preventivo %}
+        <p><strong>Validità Offerta:</strong> {{ elementi_footer.validita_preventivo }}</p>
+    {% endif %}
+
+    {% if elementi_footer.note_finali %}
+        <h4>Note Finali:</h4>
+        <p class="notes">{{ elementi_footer.note_finali }}</p>
+    {% endif %}
+    
+    {% if elementi_footer.firma_azienda %}
+        <div class="signature-area" style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee;">
+            <p>{{ elementi_footer.firma_azienda }}</p>
+        </div>
+    {% endif %}
+</div>
+{% else %}
+<div class="footer-content">
+    <p><em>Informazioni di footer non disponibili.</em></p>
+</div>
+{% endif %} 

@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Tabella Preventivo",
+  "description": "Schema per la tabella delle voci del preventivo. È un array di righe preventivo.",
+  "type": "object",
+  "properties": {
+    "righe": {
+      "type": "array",
+      "items": {
+        "$ref": "riga_preventivo.schema.json"
+      },
+      "default": []
+    },
+    "note_tabella": {
+        "description": "Eventuali note generali per la tabella delle voci.",
+        "type": "string"
+    }
+  }
+} 

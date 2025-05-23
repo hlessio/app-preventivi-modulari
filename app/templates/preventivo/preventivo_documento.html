@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preventivo {{ metadati_preventivo.numero_preventivo }} - {{ azienda_emittente.nome_azienda }}</title>
+    <!-- Qui andranno i link a CSS, HTMX, Alpine.js più avanti -->
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 0; color: #333; }
+        .container { width: 800px; margin: 20px auto; padding: 20px; border: 1px solid #ccc; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        header, footer, section { margin-bottom: 20px; padding: 10px; border: 1px solid #eee; }
+        header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .company-logo { max-width: 150px; max-height: 75px; }
+        h1, h2, h3 { color: #2c3e50; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .totals { float: right; width: 300px; }
+        .totals td { text-align: right; }
+        .text-right { text-align: right; }
+        .notes { white-space: pre-wrap; font-size: 0.9em; }
+        /* Aggiungeremo stili più specifici man mano */
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            {% include "preventivo/_intestazione_azienda.html" %}
+        </header>
+
+        <section id="cliente">
+            <h2>Cliente</h2>
+            {% include "preventivo/_intestazione_cliente.html" %}
+        </section>
+
+        <section id="metadati">
+            <h2>Dettagli Preventivo</h2>
+            <p><strong>Numero Preventivo:</strong> {{ metadati_preventivo.numero_preventivo }}</p>
+            <p><strong>Data Emissione:</strong> {{ metadati_preventivo.data_emissione if metadati_preventivo.data_emissione else 'N/D' }}</p>
+            {% if metadati_preventivo.data_scadenza %}
+            <p><strong>Data Scadenza:</strong> {{ metadati_preventivo.data_scadenza }}</p>
+            {% endif %}
+            <p><strong>Oggetto:</strong> {{ metadati_preventivo.oggetto_preventivo }}</p>
+        </section>
+
+        <section id="corpo-preventivo">
+            <h2>Prodotti/Servizi</h2>
+            {% include "preventivo/_tabella_preventivo.html" %}
+        </section>
+
+        <section id="totali">
+            {% include "preventivo/_sezione_totali.html" %}
+        </section>
+
+        {% if condizioni_contrattuali and condizioni_contrattuali.testo_condizioni %}
+        <section id="condizioni">
+            <h2>Condizioni Generali</h2>
+            {% include "preventivo/_condizioni_generali.html" %}
+        </section>
+        {% endif %}
+
+        <footer>
+            {% include "preventivo/_footer_preventivo.html" %}
+        </footer>
+    </div>
+</body>
+</html> 

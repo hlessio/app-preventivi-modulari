@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Sezione Totali",
+  "description": "Schema per la sezione dei totali del preventivo (calcolati).",
+  "type": "object",
+  "properties": {
+    "totale_imponibile_netto": {
+      "description": "Totale imponibile del preventivo, al netto dell'IVA e degli sconti.",
+      "type": "number",
+      "readOnly": true
+    },
+    "totale_sconti": {
+        "description": "Totale degli sconti applicati.",
+        "type": "number",
+        "readOnly": true
+    },
+    "totale_iva": {
+      "description": "Totale dell'IVA del preventivo.",
+      "type": "number",
+      "readOnly": true
+    },
+    "totale_generale_lordo": {
+      "description": "Totale generale del preventivo, comprensivo di IVA.",
+      "type": "number",
+      "readOnly": true
+    },
+    "riepilogo_iva": {
+      "description": "Riepilogo degli imponibili per aliquota IVA (opzionale, calcolato).",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "aliquota_percentuale": {"type": "number"},
+          "imponibile_aliquota": {"type": "number"},
+          "iva_aliquota": {"type": "number"}
+        },
+        "required": ["aliquota_percentuale", "imponibile_aliquota", "iva_aliquota"]
+      },
+      "readOnly": true
+    }
+  },
+  "required": [
+    "totale_imponibile_netto",
+    "totale_iva",
+    "totale_generale_lordo"
+  ]
+} 

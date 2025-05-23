@@ -1,0 +1,16 @@
+{# Questo template si aspetta una variabile 'riga' con numero_riga #}
+<tr>
+    <td>{{ riga.numero_riga if riga.numero_riga else '-' }}</td>
+    <td>
+        {{ riga.descrizione }}
+        {% if riga.codice_articolo %}<br><small><em>Cod. {{ riga.codice_articolo }}</em></small>{% endif %}
+        {% if riga.note_riga %}<br><small class="notes"><em>{{ riga.note_riga }}</em></small>{% endif %}
+    </td>
+    <td class="text-right">{{ riga.quantita }} {{ riga.unita_misura }}</td>
+    <td class="text-right">{{ "%.2f" % (riga.prezzo_unitario_netto if riga.prezzo_unitario_netto is not none else 0) }} €</td>
+    <td class="text-right">{{ riga.sconto_riga_percentuale if riga.sconto_riga_percentuale is not none else 0 }}%</td>
+    <td class="text-right">{{ "%.2f" % (riga.subtotale_riga_netto if riga.subtotale_riga_netto is not none else 0) }} €</td>
+    <td class="text-right">{{ riga.percentuale_iva if riga.percentuale_iva is not none else 0 }}%</td>
+    <td class="text-right">{{ "%.2f" % (riga.importo_iva_riga if riga.importo_iva_riga is not none else 0) }} €</td>
+    <td class="text-right"><strong>{{ "%.2f" % (riga.subtotale_riga_lordo if riga.subtotale_riga_lordo is not none else 0) }} €</strong></td>
+</tr> 

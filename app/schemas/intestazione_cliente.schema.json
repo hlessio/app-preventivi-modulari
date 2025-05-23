@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Intestazione Cliente",
+  "description": "Schema per i dati dell'intestazione cliente di un preventivo.",
+  "type": "object",
+  "properties": {
+    "nome_cliente": {
+      "description": "Nome o Ragione Sociale del cliente.",
+      "type": "string"
+    },
+    "partita_iva": {
+      "description": "Partita IVA del cliente (se applicabile).",
+      "type": "string"
+    },
+    "codice_fiscale": {
+      "description": "Codice Fiscale del cliente (se applicabile).",
+      "type": "string"
+    },
+    "indirizzo": {
+      "type": "object",
+      "properties": {
+        "via": {
+          "type": "string"
+        },
+        "cap": {
+          "type": "string"
+        },
+        "citta": {
+          "type": "string"
+        },
+        "provincia": {
+          "type": "string"
+        },
+        "nazione": {
+          "type": "string",
+          "default": "Italia"
+        }
+      },
+      "required": [
+        "via",
+        "cap",
+        "citta",
+        "provincia"
+      ]
+    },
+    "email": {
+      "description": "Indirizzo email del cliente.",
+      "type": "string",
+      "format": "email"
+    },
+    "telefono": {
+      "description": "Numero di telefono del cliente.",
+      "type": "string"
+    },
+    "referente": {
+      "description": "Nome del referente presso il cliente.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "nome_cliente",
+    "indirizzo"
+  ]
+} 
