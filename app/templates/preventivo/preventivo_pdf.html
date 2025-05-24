@@ -4,14 +4,28 @@
     <meta charset="UTF-8">
     <title>Preventivo {{ metadati_preventivo.numero_preventivo }} - {{ azienda_emittente.nome_azienda }}</title>
     <style>
+        /* Regole per la pagina PDF */
+        @page {
+            size: A4;
+            margin: 1.2cm 0.8cm;
+            @bottom-center {
+                content: "Pagina " counter(page) " di " counter(pages);
+                font-size: 8px;
+                color: #666;
+            }
+        }
+        
         /* Stili base ottimizzati per PDF */
         body { 
             font-family: 'DejaVu Sans', Arial, sans-serif; 
             margin: 0; 
             padding: 0; 
             color: #333; 
-            font-size: 11px;
-            line-height: 1.3;
+            font-size: 9px;
+            line-height: 1.2;
+            width: 100%;
+            max-width: 19cm; /* Aumentato per usare meglio la pagina */
+            box-sizing: border-box;
         }
         
         .container { 
@@ -29,17 +43,18 @@
             margin-bottom: 20px;
             padding-bottom: 10px;
             border-bottom: 2px solid #2c3e50;
+            page-break-inside: avoid;
         }
         
         .company-info {
             flex: 1;
-            max-width: 70%;
+            max-width: 75%;
         }
         
         .company-logo {
-            max-width: 100px;
-            max-height: 50px;
-            margin-left: 15px;
+            max-width: 80px;
+            max-height: 40px;
+            margin-left: 10px;
         }
         
         section {
@@ -53,13 +68,13 @@
             margin-bottom: 8px;
         }
         
-        h1 { font-size: 20px; margin-bottom: 4px; }
-        h2 { font-size: 16px; margin-bottom: 8px; }
-        h3 { font-size: 13px; margin-bottom: 6px; }
+        h1 { font-size: 18px; margin-bottom: 4px; }
+        h2 { font-size: 14px; margin-bottom: 8px; }
+        h3 { font-size: 12px; margin-bottom: 6px; }
         
         p { 
-            margin: 3px 0; 
-            font-size: 11px;
+            margin: 2px 0; 
+            font-size: 10px;
         }
         
         strong {
@@ -72,50 +87,58 @@
             margin-bottom: 12px;
             page-break-inside: avoid;
             table-layout: fixed;
+            font-size: 9px;
         }
         
         th, td { 
             border: 1px solid #ddd; 
-            padding: 6px; 
+            padding: 4px; 
             text-align: left; 
-            font-size: 10px;
+            font-size: 8px;
             vertical-align: top;
             word-wrap: break-word;
             overflow-wrap: break-word;
+            hyphens: auto;
         }
         
         th { 
             background-color: #f8f9fa; 
             font-weight: bold;
-            font-size: 9px;
+            font-size: 8px;
+            line-height: 1.1;
         }
         
-        .tabella-prodotti th:nth-child(1) { width: 8%; }
-        .tabella-prodotti th:nth-child(2) { width: 42%; }
-        .tabella-prodotti th:nth-child(3) { width: 8%; }
-        .tabella-prodotti th:nth-child(4) { width: 8%; }
-        .tabella-prodotti th:nth-child(5) { width: 17%; }
-        .tabella-prodotti th:nth-child(6) { width: 17%; }
+        /* Larghezze colonne tabella ultra-ottimizzate per A4 */
+        .tabella-prodotti th:nth-child(1) { width: 5%; }   /* # */
+        .tabella-prodotti th:nth-child(2) { width: 50%; }  /* Descrizione */
+        .tabella-prodotti th:nth-child(3) { width: 7%; }   /* Qtà */
+        .tabella-prodotti th:nth-child(4) { width: 7%; }   /* Unità */
+        .tabella-prodotti th:nth-child(5) { width: 15%; }  /* Prezzo */
+        .tabella-prodotti th:nth-child(6) { width: 16%; }  /* Totale */
         
-        .tabella-prodotti td:nth-child(1) { width: 8%; }
-        .tabella-prodotti td:nth-child(2) { width: 42%; }
-        .tabella-prodotti td:nth-child(3) { width: 8%; }
-        .tabella-prodotti td:nth-child(4) { width: 8%; }
-        .tabella-prodotti td:nth-child(5) { width: 17%; }
-        .tabella-prodotti td:nth-child(6) { width: 17%; }
+        .tabella-prodotti td:nth-child(1) { width: 5%; }
+        .tabella-prodotti td:nth-child(2) { width: 50%; }
+        .tabella-prodotti td:nth-child(3) { width: 7%; }
+        .tabella-prodotti td:nth-child(4) { width: 7%; }
+        .tabella-prodotti td:nth-child(5) { width: 15%; }
+        .tabella-prodotti td:nth-child(6) { width: 16%; }
         
         .totals { 
             float: right; 
-            width: 250px;
+            width: 220px;
             clear: both;
             margin-top: 15px;
+        }
+        
+        .totals table {
+            font-size: 9px;
         }
         
         .totals td { 
             text-align: right; 
             font-weight: bold;
-            font-size: 10px;
-            padding: 4px;
+            font-size: 9px;
+            padding: 3px;
         }
         
         .text-right { 
@@ -128,9 +151,9 @@
         
         .notes { 
             white-space: pre-wrap; 
-            font-size: 9px;
+            font-size: 8px;
             background-color: #f8f9fa;
-            padding: 8px;
+            padding: 6px;
             border-left: 3px solid #2c3e50;
             margin-top: 8px;
             word-wrap: break-word;
@@ -138,9 +161,10 @@
         
         .cliente-box {
             background-color: #f8f9fa;
-            padding: 12px;
+            padding: 8px;
             border-left: 3px solid #2c3e50;
             margin-bottom: 12px;
+            font-size: 9px;
         }
         
         .metadati-box {
@@ -161,30 +185,54 @@
         
         footer {
             margin-top: 20px;
-            padding-top: 12px;
+            padding-top: 8px;
             border-top: 1px solid #ddd;
-            font-size: 9px;
+            font-size: 8px;
             color: #666;
+            page-break-inside: avoid;
         }
         
         /* Numerazione righe tabella */
         .numero-riga {
             text-align: center;
-            width: 8%;
+            width: 6%;
             background-color: #f8f9fa;
-            font-size: 9px;
+            font-size: 8px;
         }
         
-        /* Descrizioni più compatte */
+        /* Descrizioni ultra-compatte per layout complessi */
         .descrizione-compatta {
-            line-height: 1.2;
-            font-size: 9px;
+            line-height: 1.0;
+            font-size: 7px;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            hyphens: auto;
+            max-width: 100%;
         }
         
-        /* Prezzi più compatti */
+        /* Stili ultra-compatti per tabelle complesse */
+        .ultra-compatto table { 
+            font-size: 7px;
+        }
+        
+        .ultra-compatto th, .ultra-compatto td { 
+            padding: 2px; 
+            font-size: 7px;
+            line-height: 1.0;
+        }
+        
+        /* Prezzi ultra-compatti */
         .prezzo {
-            font-size: 9px;
+            font-size: 7px;
             white-space: nowrap;
+        }
+        
+        /* Testo extra-piccolo per note */
+        .note-piccole {
+            font-size: 6px;
+            color: #666;
+            line-height: 0.9;
+            font-style: italic;
         }
     </style>
 </head>
@@ -265,7 +313,7 @@
         </section>
 
         <!-- Corpo Preventivo -->
-        <section id="corpo-preventivo">
+        <section id="corpo-preventivo" class="ultra-compatto">
             <h3>Prodotti/Servizi Offerti</h3>
             {% if corpo_preventivo and corpo_preventivo.righe %}
             <table class="tabella-prodotti">
@@ -286,7 +334,7 @@
                         <td class="descrizione-compatta">
                             <strong>{{ riga.descrizione }}</strong>
                             {% if riga.note_riga %}
-                            <br><small style="color: #666; font-size: 8px;">{{ riga.note_riga }}</small>
+                            <br><span class="note-piccole">{{ riga.note_riga }}</span>
                             {% endif %}
                         </td>
                         <td class="text-center">{{ riga.quantita }}</td>

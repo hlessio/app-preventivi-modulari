@@ -230,32 +230,14 @@
                                         <span x-text="formatCurrency(preventivo.valore || 0)"></span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                                        <a :href="`/preventivo/${preventivo.id}/visualizza?user_id=test-user`" 
-                                           class="text-blue-600 hover:text-blue-900" 
-                                           title="Visualizza">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        <a :href="`/preventivo/${preventivo.id}/pdf?user_id=test-user`" 
-                                           class="text-orange-600 hover:text-orange-900" 
-                                           title="Scarica PDF"
-                                           target="_blank">
-                                            <i class="fas fa-file-pdf"></i>
-                                        </a>
+                                        <a :href="`/preventivo/${preventivo.id}/visualizza?user_id=da2cb935-e023-40dd-9703-d918f1066b24`"
+                                           class="text-blue-600 hover:text-blue-900">Visualizza</a>
+                                        <span class="text-gray-300">|</span>
                                         <a :href="`/preventivo/${preventivo.id}/modifica`" 
-                                           class="text-indigo-600 hover:text-indigo-900" 
-                                           title="Modifica">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <button @click="duplicaPreventivo(preventivo.id)" 
-                                                class="text-green-600 hover:text-green-900" 
-                                                title="Duplica">
-                                            <i class="fas fa-copy"></i>
-                                        </button>
-                                        <button @click="eliminaPreventivo(preventivo.id)" 
-                                                class="text-red-600 hover:text-red-900" 
-                                                title="Elimina">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
+                                           class="text-green-600 hover:text-green-900">Modifica</a>
+                                        <span class="text-gray-300">|</span>
+                                        <a :href="`/preventivo/${preventivo.id}/pdf?user_id=da2cb935-e023-40dd-9703-d918f1066b24`"
+                                           class="text-red-600 hover:text-red-900">PDF</a>
                                     </td>
                                 </tr>
                             </template>
@@ -305,7 +287,7 @@
                 try {
                     this.loading = true;
                     const params = new URLSearchParams({
-                        user_id: 'test-user', // TODO: Sostituire con user ID reale
+                        user_id: 'da2cb935-e023-40dd-9703-d918f1066b24', // TODO: Sostituire con user ID reale
                         ...this.filters
                     });
                     

@@ -9,12 +9,14 @@ from typing import List
 from .models import PreventivoMasterModel
 from .services.preventivo_calculator import calcola_totali_preventivo
 from .services.preventivo_service import PreventivoService
+# Scommento ora che WeasyPrint funziona correttamente
 from .services.pdf_export_service import PDFExportService
 from .database import get_db, engine, Base
 from .db_models import Preventivo
 
 # Crea le tabelle nel database (per ora facciamo così, in futuro useremo Alembic)
-Base.metadata.create_all(bind=engine)
+# Commento perché ora usiamo Alembic per le migrazioni
+# Base.metadata.create_all(bind=engine)
 
 # Definisci il percorso base del progetto o dell'app
 # Questo è utile per trovare la directory dei template in modo robusto
@@ -27,7 +29,7 @@ app = FastAPI(title="App Preventivi Modulari")
 # In questo caso, se main.py è in app/, e templates è in app/templates/
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
-# Configurazione del servizio PDF
+# Configurazione del servizio PDF - Ora abilitato
 pdf_service = PDFExportService(BASE_DIR / "templates")
 
 
@@ -72,7 +74,7 @@ async def modifica_preventivo(request: Request, preventivo_id: str):
 @app.post("/preventivo/visualizza", response_class=HTMLResponse)
 async def visualizza_preventivo(request: Request, preventivo_data: PreventivoMasterModel):
     """
-    Endpoint per visualizzare un preventivo.
+    Endpoint per visualizzare un preventivo usando il template unificato.
     Accetta un JSON con i dati del preventivo (validato da PreventivoMasterModel),
     calcola i totali e renderizza il template HTML.
     """
@@ -83,8 +85,8 @@ async def visualizza_preventivo(request: Request, preventivo_data: PreventivoMas
     preventivo_dict = preventivo_data.model_dump()
 
     return templates.TemplateResponse(
-        "preventivo/preventivo_documento.html", 
-        {"request": request, **preventivo_dict} # Usiamo il dizionario convertito
+        "preventivo/preventivo_unificato.html", 
+        {"request": request, **preventivo_dict}
     )
 
 # Endpoint per salvare un preventivo
@@ -101,8 +103,8 @@ async def salva_preventivo(
         # Leggi il body della richiesta
         body = await request.json()
         
-        # Estrai user_id dai dati
-        user_id = body.pop("user_id", "test-user")  # Default per testing
+        # Estrai user_id dai dati - Uso UUID reale dell'utente di test
+        user_id = body.pop("user_id", "da2cb935-e023-40dd-9703-d918f1066b24")  # UUID dell'utente di test
         
         # Valida i dati con Pydantic
         preventivo_data = PreventivoMasterModel(**body)
@@ -126,7 +128,7 @@ async def salva_preventivo(
 @app.get("/preventivo/{preventivo_id}")
 async def carica_preventivo(
     preventivo_id: str,  # Cambiato da UUID a str
-    user_id: str = Query(default="test-user", description="ID dell'utente"),  # Default per testing
+    user_id: str = Query(default="da2cb935-e023-40dd-9703-d918f1066b24", description="ID dell'utente"),  # UUID dell'utente di test
     db: Session = Depends(get_db)
 ):
     """
@@ -145,7 +147,7 @@ async def carica_preventivo(
 async def visualizza_preventivo_salvato(
     request: Request,
     preventivo_id: str,  # Cambiato da UUID a str
-    user_id: str = Query(default="test-user", description="ID dell'utente"),  # Default per testing
+    user_id: str = Query(default="da2cb935-e023-40dd-9703-d918f1066b24", description="ID dell'utente"),  # UUID dell'utente di test
     db: Session = Depends(get_db)
 ):
     """
@@ -164,14 +166,14 @@ async def visualizza_preventivo_salvato(
     preventivo_dict = preventivo_data.model_dump()
 
     return templates.TemplateResponse(
-        "preventivo/preventivo_documento.html", 
+        "preventivo/preventivo_unificato.html", 
         {"request": request, **preventivo_dict}
     )
 
 # Endpoint per elencare i preventivi di un utente
 @app.get("/preventivi")
 async def lista_preventivi(
-    user_id: str = Query(default="test-user", description="ID dell'utente"),  # Default per testing
+    user_id: str = Query(default="da2cb935-e023-40dd-9703-d918f1066b24", description="ID dell'utente"),  # UUID dell'utente di test
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db)
@@ -225,7 +227,7 @@ async def genera_pdf_preventivo(preventivo_data: PreventivoMasterModel):
 @app.get("/preventivo/{preventivo_id}/pdf", response_class=Response)
 async def scarica_pdf_preventivo(
     preventivo_id: str,
-    user_id: str = Query(default="test-user", description="ID dell'utente"),
+    user_id: str = Query(default="da2cb935-e023-40dd-9703-d918f1066b24", description="ID dell'utente"),  # Aggiorno con UUID reale
     db: Session = Depends(get_db)
 ):
     """

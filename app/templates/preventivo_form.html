@@ -450,7 +450,8 @@
                     this.formData.numero_preventivo = `PREV-${Date.now()}`;
                 }
                 
-                return {
+                // Aggiungi user_id ai dati
+                const datiFormattati = {
                     metadati_preventivo: {
                         id_preventivo: "00000000-0000-0000-0000-000000000000", // UUID temporaneo
                         numero_preventivo: this.formData.numero_preventivo,
@@ -507,6 +508,11 @@
                         note_finali: this.formData.footer_preventivo.note
                     }
                 };
+                
+                // Aggiungi user_id ai dati
+                datiFormattati.user_id = 'da2cb935-e023-40dd-9703-d918f1066b24'; // TODO: Sostituire con user ID reale
+                
+                return datiFormattati;
             },
 
             updateAnteprima() {
@@ -557,10 +563,7 @@
                         headers: {
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({
-                            ...data,
-                            user_id: 'test-user' // TODO: Sostituire con user ID reale
-                        })
+                        body: JSON.stringify(data)
                     });
 
                     if (response.ok) {
@@ -587,7 +590,7 @@
 
             async caricaPreventivo(id) {
                 try {
-                    const response = await fetch(`/preventivo/${id}?user_id=test-user`);
+                    const response = await fetch(`/preventivo/${id}?user_id=da2cb935-e023-40dd-9703-d918f1066b24`);
                     if (response.ok) {
                         const data = await response.json();
                         this.formData = { ...this.formData, ...data };
@@ -610,7 +613,7 @@
                     
                     if (preventivo_id) {
                         // Preventivo esistente - usa endpoint GET
-                        const response = await fetch(`/preventivo/${preventivo_id}/pdf?user_id=test-user`);
+                        const response = await fetch(`/preventivo/${preventivo_id}/pdf?user_id=da2cb935-e023-40dd-9703-d918f1066b24`);
                         
                         if (response.ok) {
                             const blob = await response.blob();

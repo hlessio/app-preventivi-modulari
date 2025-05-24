@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON
 from sqlalchemy.orm import relationship
-# from sqlalchemy.dialects.postgresql import UUID # Rimuoviamo questo import per SQLite
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 import uuid
 from datetime import datetime
 from .database import Base
@@ -8,11 +8,11 @@ from .database import Base
 class User(Base):
     __tablename__ = "users"
     
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
-    email = Column(String, unique=True, index=True, nullable=False)
-    username = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
-    is_active = Column(String, default="active")  # active, inactive, suspended
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    email = Column(String(255), unique=True, index=True, nullable=False)
+    username = Column(String(150), unique=True, index=True, nullable=False)
+    hashed_password = Column(String(255), nullable=False)
+    is_active = Column(String(20), default="active")  # active, inactive, suspended
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -23,25 +23,25 @@ class User(Base):
 class Azienda(Base):
     __tablename__ = "aziende"
     
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
-    user_id = Column(String, ForeignKey("users.id"), nullable=False, unique=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, unique=True)
     
     # Dati azienda (corrispondenti al modello IntestazioneAzienda)
-    nome_azienda = Column(String, nullable=False)
-    logo_url = Column(String, nullable=True)
-    partita_iva_azienda = Column(String, nullable=False)
-    codice_fiscale_azienda = Column(String, nullable=True)
+    nome_azienda = Column(String(255), nullable=False)
+    logo_url = Column(String(500), nullable=True)
+    partita_iva_azienda = Column(String(50), nullable=False)
+    codice_fiscale_azienda = Column(String(50), nullable=True)
     
     # Indirizzo (denormalizzato per semplicità)
-    indirizzo_via = Column(String, nullable=False)
-    indirizzo_cap = Column(String, nullable=False)
-    indirizzo_citta = Column(String, nullable=False)
-    indirizzo_provincia = Column(String, nullable=False)
-    indirizzo_nazione = Column(String, default="Italia")
+    indirizzo_via = Column(String(255), nullable=False)
+    indirizzo_cap = Column(String(10), nullable=False)
+    indirizzo_citta = Column(String(100), nullable=False)
+    indirizzo_provincia = Column(String(50), nullable=False)
+    indirizzo_nazione = Column(String(100), default="Italia")
     
-    email_azienda = Column(String, nullable=False)
-    telefono_azienda = Column(String, nullable=True)
-    sito_web_azienda = Column(String, nullable=True)
+    email_azienda = Column(String(255), nullable=False)
+    telefono_azienda = Column(String(50), nullable=True)
+    sito_web_azienda = Column(String(255), nullable=True)
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -52,17 +52,16 @@ class Azienda(Base):
 class Preventivo(Base):
     __tablename__ = "preventivi"
     
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
-    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     
     # Metadati del preventivo
-    numero_preventivo = Column(String, nullable=False, index=True)
-    oggetto_preventivo = Column(String, nullable=False)
-    stato_preventivo = Column(String, default="bozza")  # bozza, inviato, accettato, rifiutato, scaduto
+    numero_preventivo = Column(String(100), nullable=False, index=True)
+    oggetto_preventivo = Column(String(500), nullable=False)
+    stato_preventivo = Column(String(50), default="bozza")  # bozza, inviato, accettato, rifiutato, scaduto
     
-    # JSON Master completo del preventivo
-    # Questo campo conterrà tutto il JSON come definito in PreventivoMasterModel
-    dati_preventivo = Column(JSON, nullable=False)
+    # Usa JSONB per performance e capacità di query avanzate su PostgreSQL
+    dati_preventivo = Column(JSONB, nullable=False)
     
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)

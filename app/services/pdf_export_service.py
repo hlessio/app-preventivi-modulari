@@ -1,9 +1,28 @@
-from weasyprint import HTML, CSS
-from jinja2 import Environment, FileSystemLoader
 from pathlib import Path
-from typing import Optional
+import logging
+from typing import Optional, Union
+from jinja2 import Environment, FileSystemLoader
 import tempfile
-import os
+
+# Setup logger
+logger = logging.getLogger(__name__)
+
+# Tentativo di importare WeasyPrint
+try:
+    from weasyprint import HTML, CSS
+    WEASYPRINT_AVAILABLE = True
+    logger.info("✅ WeasyPrint caricato correttamente")
+except ImportError as e:
+    WEASYPRINT_AVAILABLE = False
+    logger.warning(f"⚠️ WeasyPrint non disponibile: {e}")
+    # Definiamo delle classi mock per evitare errori di tipo
+    HTML = None
+    CSS = None
+except Exception as e:
+    WEASYPRINT_AVAILABLE = False
+    logger.error(f"❌ Errore nel caricamento WeasyPrint: {e}")
+    HTML = None
+    CSS = None
 
 from ..models import PreventivoMasterModel
 from ..services.preventivo_calculator import calcola_totali_preventivo
@@ -11,7 +30,8 @@ from ..services.preventivo_calculator import calcola_totali_preventivo
 
 class PDFExportService:
     """
-    Servizio per l'export di preventivi in formato PDF usando WeasyPrint
+    Servizio per l'export PDF dei preventivi con fallback graceful.
+    Se WeasyPrint non è disponibile, fornisce messaggi di errore utili.
     """
     
     def __init__(self, templates_dir: Path):
@@ -23,36 +43,52 @@ class PDFExportService:
         """
         self.templates_dir = templates_dir
         self.env = Environment(loader=FileSystemLoader(str(templates_dir)))
+        self.is_available = WEASYPRINT_AVAILABLE
+        
+        if not self.is_available:
+            logger.warning("🔧 PDFExportService inizializzato senza WeasyPrint - funzionalità PDF disabilitate")
         
     def genera_pdf_preventivo(self, preventivo_data: PreventivoMasterModel) -> bytes:
         """
-        Genera un PDF del preventivo a partire dai dati forniti
+        Genera un PDF del preventivo usando il template unificato.
         
         Args:
-            preventivo_data: Dati del preventivo da convertire in PDF
+            preventivo_data: Dati del preventivo validati
             
         Returns:
-            bytes: Il contenuto del PDF generato
+            bytes: Contenuto del PDF
             
         Raises:
-            Exception: Se c'è un errore nella generazione del PDF
+            RuntimeError: Se WeasyPrint non è disponibile
+            Exception: Altri errori di generazione PDF
         """
+        if not self.is_available:
+            raise RuntimeError(
+                "❌ Export PDF non disponibile. "
+                "WeasyPrint non è installato correttamente. "
+                "Consulta la documentazione per l'installazione delle dipendenze di sistema."
+            )
+        
         try:
             # Assicuriamoci che i totali siano calcolati
             calcola_totali_preventivo(preventivo_data)
             
-            # Renderizza l'HTML usando il template PDF
+            # Renderizza l'HTML usando il template unificato
             html_content = self._renderizza_html_pdf(preventivo_data)
             
-            # Genera e restituisce il PDF
-            return self._genera_pdf_da_html(html_content)
+            # Genera il PDF usando SOLO l'HTML (il CSS è incorporato nel template)
+            pdf_bytes = self._genera_pdf_da_html(html_content)
+            
+            logger.info(f"✅ PDF generato con successo per preventivo {preventivo_data.metadati_preventivo.numero_preventivo}")
+            return pdf_bytes
             
         except Exception as e:
+            logger.error(f"❌ Errore nella generazione PDF: {e}")
             raise Exception(f"Errore nella generazione del PDF: {str(e)}")
     
     def _renderizza_html_pdf(self, preventivo_data: PreventivoMasterModel) -> str:
         """
-        Renderizza l'HTML del preventivo usando il template specifico per PDF
+        Renderizza l'HTML del preventivo usando il template unificato
         
         Args:
             preventivo_data: Dati del preventivo
@@ -60,14 +96,17 @@ class PDFExportService:
         Returns:
             str: HTML renderizzato
         """
-        # Usa il template specifico per PDF o fallback al template normale
-        template_name = "preventivo/preventivo_pdf.html"
+        # Usa il template unificato che gestisce sia web che PDF
+        template_name = "preventivo/preventivo_unificato.html"
         
         try:
             template = self.env.get_template(template_name)
         except:
-            # Fallback al template normale se quello PDF non esiste
-            template = self.env.get_template("preventivo/preventivo_documento.html")
+            # Fallback ai template esistenti se l'unificato non esiste
+            try:
+                template = self.env.get_template("preventivo/preventivo_pdf.html")
+            except:
+                template = self.env.get_template("preventivo/preventivo_documento.html")
         
         # Converti il modello Pydantic in dizionario
         context = preventivo_data.model_dump()
@@ -85,167 +124,23 @@ class PDFExportService:
         Returns:
             bytes: PDF generato
         """
-        # CSS specifico per la stampa PDF
-        pdf_css = CSS(string="""
-            @page {
-                size: A4;
-                margin: 2cm 1.5cm;
-                @bottom-center {
-                    content: "Pagina " counter(page) " di " counter(pages);
-                    font-size: 9px;
-                    color: #666;
-                }
-            }
-            
-            body {
-                font-family: 'DejaVu Sans', Arial, sans-serif;
-                font-size: 11px;
-                line-height: 1.3;
-                color: #333;
-            }
-            
-            .container {
-                width: 100%;
-                margin: 0;
-                padding: 0;
-                border: none;
-                box-shadow: none;
-                max-width: 100%;
-                box-sizing: border-box;
-            }
-            
-            header, footer, section {
-                margin-bottom: 12px;
-                padding: 8px 0;
-                border: none;
-                page-break-inside: avoid;
-            }
-            
-            header {
-                display: flex;
-                justify-content: space-between;
-                align-items: flex-start;
-                border-bottom: 2px solid #2c3e50;
-                margin-bottom: 20px;
-            }
-            
-            .company-logo {
-                max-width: 100px;
-                max-height: 50px;
-            }
-            
-            h1, h2, h3 {
-                color: #2c3e50;
-                margin-top: 0;
-                margin-bottom: 8px;
-            }
-            
-            h1 { font-size: 20px; }
-            h2 { font-size: 16px; margin-bottom: 8px; }
-            h3 { font-size: 13px; }
-            
-            table {
-                width: 100%;
-                border-collapse: collapse;
-                margin-bottom: 12px;
-                page-break-inside: avoid;
-                table-layout: fixed;
-            }
-            
-            th, td {
-                border: 1px solid #ddd;
-                padding: 6px;
-                text-align: left;
-                font-size: 10px;
-                vertical-align: top;
-                word-wrap: break-word;
-                overflow-wrap: break-word;
-            }
-            
-            th {
-                background-color: #f8f9fa;
-                font-weight: bold;
-                font-size: 9px;
-            }
-            
-            /* Larghezze specifiche per tabella prodotti */
-            .tabella-prodotti th:nth-child(1),
-            .tabella-prodotti td:nth-child(1) { width: 8%; }
-            .tabella-prodotti th:nth-child(2),
-            .tabella-prodotti td:nth-child(2) { width: 42%; }
-            .tabella-prodotti th:nth-child(3),
-            .tabella-prodotti td:nth-child(3) { width: 8%; }
-            .tabella-prodotti th:nth-child(4),
-            .tabella-prodotti td:nth-child(4) { width: 8%; }
-            .tabella-prodotti th:nth-child(5),
-            .tabella-prodotti td:nth-child(5) { width: 17%; }
-            .tabella-prodotti th:nth-child(6),
-            .tabella-prodotti td:nth-child(6) { width: 17%; }
-            
-            .totals {
-                float: right;
-                width: 250px;
-                clear: both;
-                margin-top: 15px;
-            }
-            
-            .totals td {
-                text-align: right;
-                font-weight: bold;
-                font-size: 10px;
-                padding: 4px;
-            }
-            
-            .text-right {
-                text-align: right;
-            }
-            
-            .text-center {
-                text-align: center;
-            }
-            
-            .notes {
-                white-space: pre-wrap;
-                font-size: 9px;
-                background-color: #f8f9fa;
-                padding: 8px;
-                border-left: 3px solid #2c3e50;
-                word-wrap: break-word;
-            }
-            
-            .numero-riga {
-                text-align: center;
-                background-color: #f8f9fa;
-                font-size: 9px;
-            }
-            
-            .descrizione-compatta {
-                line-height: 1.2;
-                font-size: 9px;
-            }
-            
-            .prezzo {
-                font-size: 9px;
-                white-space: nowrap;
-            }
-            
-            /* Evita interruzioni di pagina indesiderate */
-            .totals, .condizioni {
-                page-break-inside: avoid;
-            }
-            
-            /* Stili per nascondere elementi non necessari in PDF */
-            .no-print {
-                display: none !important;
-            }
-        """)
-        
         # Crea il documento HTML
         html_doc = HTML(string=html_content)
         
         # Genera il PDF
-        return html_doc.write_pdf(stylesheets=[pdf_css])
-
+        pdf_bytes = html_doc.write_pdf()
+        
+        return pdf_bytes
+    
+    def _get_pdf_css(self) -> Optional[str]:
+        """
+        [OBSOLETO] CSS complementare per la generazione PDF.
+        Non più utilizzato - il CSS è ora gestito dal template unificato.
+        Mantenuto per compatibilità futura.
+        """
+        # CSS disabilitato - tutto gestito dal template unificato
+        return None
+    
     def salva_pdf_temporaneo(self, preventivo_data: PreventivoMasterModel) -> str:
         """
         Genera un PDF e lo salva in un file temporaneo
@@ -261,4 +156,18 @@ class PDFExportService:
         # Crea un file temporaneo
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
             tmp_file.write(pdf_content)
-            return tmp_file.name 
+            return tmp_file.name
+    
+    def check_availability(self) -> dict:
+        """
+        Verifica la disponibilità del servizio PDF.
+        
+        Returns:
+            dict: Status del servizio
+        """
+        return {
+            "available": self.is_available,
+            "weasyprint_installed": WEASYPRINT_AVAILABLE,
+            "message": "✅ Export PDF disponibile" if self.is_available else 
+                      "❌ Export PDF non disponibile - WeasyPrint non installato correttamente"
+        } 
