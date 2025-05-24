@@ -2,123 +2,80 @@
 
 {% block title %}Dashboard - App Preventivi{% endblock %}
 
-{% block content %}
+{% block header %}
+<!-- Header personalizzato disabilitato - usiamo quello nel main_layout -->
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Override del layout base per usare tutta la larghezza */
+    .dashboard-fullwidth {
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    /* Custom scrollbar per sidebar */
+    .sidebar-cartelle {
+        scrollbar-width: thin;
+        scrollbar-color: #d1d5db #f9fafb;
+    }
+    .sidebar-cartelle::-webkit-scrollbar {
+        width: 6px;
+    }
+    .sidebar-cartelle::-webkit-scrollbar-track {
+        background: #f9fafb;
+    }
+    .sidebar-cartelle::-webkit-scrollbar-thumb {
+        background: #d1d5db;
+        border-radius: 3px;
+    }
+    .sidebar-cartelle::-webkit-scrollbar-thumb:hover {
+        background: #9ca3af;
+    }
+</style>
+{% endblock %}
+
+{% block main_layout %}
+<!-- Layout full-width per la dashboard -->
 <div x-data="dashboardData()" class="flex h-screen bg-gray-50">
-    <!-- Sidebar Cartelle -->
-    <div class="w-80 bg-white shadow-lg flex flex-col border-r border-gray-200">
-        <!-- Header Sidebar -->
-        <div class="p-4 border-b border-gray-200">
-            <div class="flex items-center justify-between">
-                <h3 class="text-lg font-semibold text-gray-900">Cartelle</h3>
-                <button @click="mostraModaleNuovaCartella = true" 
-                        class="inline-flex items-center rounded-md bg-blue-600 px-2 py-1 text-xs font-semibold text-white shadow-sm hover:bg-blue-500">
-                    <i class="fas fa-plus mr-1"></i>
-                    Nuova
-                </button>
-            </div>
-        </div>
-
-        <!-- Lista Cartelle -->
-        <div class="flex-1 overflow-y-auto p-4">
-            <!-- Cartella "Tutti i preventivi" -->
-            <div @click="selezionaCartella(null)" 
-                 :class="{'bg-blue-50 border-blue-200 text-blue-700': cartellaSelezionata === null, 'hover:bg-gray-50': cartellaSelezionata !== null}"
-                 class="flex items-center justify-between p-3 rounded-lg border cursor-pointer mb-2">
-                <div class="flex items-center">
-                    <i class="fas fa-list-ul text-gray-600 mr-3"></i>
-                    <span class="font-medium">Tutti i preventivi</span>
-                </div>
-                <span class="text-sm text-gray-500" x-text="totalePreventiviAttivi"></span>
-            </div>
-
-            <!-- Cartella "Senza cartella" -->
-            <div @click="selezionaCartella('none')" 
-                 :class="{'bg-blue-50 border-blue-200 text-blue-700': cartellaSelezionata === 'none', 'hover:bg-gray-50': cartellaSelezionata !== 'none'}"
-                 class="flex items-center justify-between p-3 rounded-lg border cursor-pointer mb-3">
-                <div class="flex items-center">
-                    <i class="fas fa-inbox text-gray-600 mr-3"></i>
-                    <span class="font-medium">Senza cartella</span>
-                </div>
-                <span class="text-sm text-gray-500" x-text="preventivisSenzaCartella"></span>
-            </div>
-
-            <!-- Cartelle personalizzate -->
-            <div class="space-y-2">
-                <template x-for="cartella in cartelle" :key="cartella.id">
-                    <div @click="selezionaCartella(cartella.id)" 
-                         :class="{'bg-blue-50 border-blue-200 text-blue-700': cartellaSelezionata === cartella.id, 'hover:bg-gray-50': cartellaSelezionata !== cartella.id}"
-                         class="group flex items-center justify-between p-3 rounded-lg border cursor-pointer">
-                        <div class="flex items-center flex-1 min-w-0">
-                            <i :class="cartella.icona || 'fas fa-folder'" 
-                               :style="cartella.colore ? `color: ${cartella.colore}` : ''"
-                               class="mr-3 text-gray-600"></i>
-                            <span class="font-medium truncate" x-text="cartella.nome"></span>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <span class="text-sm text-gray-500" x-text="cartella.numero_preventivi"></span>
-                            <div class="hidden group-hover:flex items-center space-x-1">
-                                <button @click.stop="modificaCartella(cartella)" 
-                                        class="p-1 rounded hover:bg-gray-200">
-                                    <i class="fas fa-edit text-xs text-gray-500"></i>
-                                </button>
-                                <button @click.stop="eliminaCartella(cartella.id)" 
-                                        class="p-1 rounded hover:bg-gray-200">
-                                    <i class="fas fa-trash text-xs text-red-500"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </template>
-            </div>
-        </div>
-
-        <!-- Tab Vista (Attivi/Cestino) -->
-        <div class="border-t border-gray-200 p-4">
-            <div class="flex space-x-1 border border-gray-300 rounded-md p-1">
-                <button @click="switchView('attivi')" 
-                        :class="{'bg-blue-600 text-white': currentView === 'attivi', 'bg-gray-100 text-gray-700 hover:bg-gray-200': currentView !== 'attivi'}"
-                        class="flex-1 px-3 py-2 text-sm font-medium rounded-md focus:outline-none">
-                    <i class="fas fa-list-ul mr-2"></i>Attivi
-                </button>
-                <button @click="switchView('cestinati')" 
-                        :class="{'bg-red-600 text-white': currentView === 'cestinati', 'bg-gray-100 text-gray-700 hover:bg-gray-200': currentView !== 'cestinati'}"
-                        class="flex-1 px-3 py-2 text-sm font-medium rounded-md focus:outline-none">
-                    <i class="fas fa-trash mr-2"></i>Cestino
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Contenuto Principale -->
-    <div class="flex-1 flex flex-col overflow-hidden">
-        <!-- Header -->
-        <div class="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h1 class="text-2xl font-semibold text-gray-900">
-                        <span x-show="currentView === 'attivi'">Preventivi Attivi</span>
-                        <span x-show="currentView === 'cestinati'">Cestino</span>
-                    </h1>
-                    <p class="text-sm text-gray-600 mt-1">
-                        <span x-show="cartellaSelezionata === null">Tutti i preventivi</span>
-                        <span x-show="cartellaSelezionata === 'none'">Preventivi senza cartella</span>
-                        <span x-show="cartellaSelezionata && cartellaSelezionata !== 'none'" x-text="getNomeCartellaSelezionata()"></span>
-                    </p>
-                </div>
+    <!-- Header con logo e navigazione - Full Width -->
+    <div class="fixed top-0 left-0 right-0 bg-white px-6 py-3 border-b z-10 shadow-sm">
+        <div class="flex items-center justify-between w-full">
+            <div class="flex items-center space-x-4">
+                <!-- Logo e titolo app -->
                 <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-file-invoice-dollar text-white text-sm"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-gray-900">
+                            <span x-show="currentView === 'attivi'">Dashboard - Preventivi Attivi</span>
+                            <span x-show="currentView === 'cestinati'">Dashboard - Cestino</span>
+                        </h1>
+                        <p class="text-xs text-gray-500">
+                            <span x-show="cartellaSelezionata === null">Tutti i preventivi</span>
+                            <span x-show="cartellaSelezionata === 'none'">Preventivi senza cartella</span>
+                            <span x-show="cartellaSelezionata && cartellaSelezionata !== 'none'" x-text="getNomeCartellaSelezionata()"></span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Azioni compatte -->
+            <div class="flex items-center space-x-2">
                 <a href="/templates/composer" 
-                   class="inline-flex items-center rounded-md bg-purple-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-purple-500">
-                    <i class="fas fa-cogs mr-2"></i>
+                   class="inline-flex items-center rounded-md bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-purple-500">
+                    <i class="fas fa-cogs mr-1.5"></i>
                     Template Composer
                 </a>
                 
                 <!-- Dropdown Nuovo Preventivo con Template -->
                 <div x-show="currentView === 'attivi'" class="relative" x-data="{ isOpen: false }">
                     <button @click="isOpen = !isOpen" 
-                            class="inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500">
-                        <i class="fas fa-plus mr-2"></i>
+                            class="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-500">
+                        <i class="fas fa-plus mr-1.5"></i>
                         Nuovo Preventivo
-                        <i class="fas fa-chevron-down ml-2"></i>
+                        <i class="fas fa-chevron-down ml-1"></i>
                     </button>
                     
                     <div x-show="isOpen" 
@@ -197,265 +154,355 @@
                                 </a>
                             </div>
                         </div>
-                        
-                        <div class="py-1 bg-gray-50 rounded-b-md">
-                            <a href="/templates/composer" 
-                               class="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900">
-                                <i class="fas fa-plus mr-3 text-gray-400 group-hover:text-gray-600"></i>
-                                Crea nuovo template
-                            </a>
-                        </div>
                     </div>
                 </div>
-                
-                    <!-- Pulsante Svuota Cestino (mostra solo in vista cestino) -->
-                    <button x-show="currentView === 'cestinati'" 
-                            @click="svuotaTuttoCestino()" 
-                            class="inline-flex items-center rounded-md bg-red-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700">
-                        <i class="fas fa-eraser mr-2"></i>Svuota Tutto
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenuto principale con padding-top per l'header fisso -->
+    <div class="flex w-full pt-16">
+        <!-- Sidebar Cartelle -->
+        <div class="w-80 bg-white shadow-lg flex flex-col border-r border-gray-200 sidebar-cartelle">
+            <!-- Header Sidebar -->
+            <div class="p-4 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-900">Cartelle</h3>
+                    <button @click="mostraModaleNuovaCartella = true" 
+                            class="inline-flex items-center rounded-md bg-blue-600 px-2 py-1 text-xs font-semibold text-white shadow-sm hover:bg-blue-500">
+                        <i class="fas fa-plus mr-1"></i>
+                        Nuova
+                    </button>
+                </div>
+            </div>
+
+            <!-- Lista Cartelle -->
+            <div class="flex-1 overflow-y-auto p-4">
+                <!-- Cartella "Tutti i preventivi" -->
+                <div @click="selezionaCartella(null)" 
+                     :class="{'bg-blue-50 border-blue-200 text-blue-700': cartellaSelezionata === null, 'hover:bg-gray-50': cartellaSelezionata !== null}"
+                     class="flex items-center justify-between p-3 rounded-lg border cursor-pointer mb-2">
+                    <div class="flex items-center">
+                        <i class="fas fa-list-ul text-gray-600 mr-3"></i>
+                        <span class="font-medium">Tutti i preventivi</span>
+                    </div>
+                    <span class="text-sm text-gray-500" x-text="totalePreventiviAttivi"></span>
+                </div>
+
+                <!-- Cartella "Senza cartella" -->
+                <div @click="selezionaCartella('none')" 
+                     :class="{'bg-blue-50 border-blue-200 text-blue-700': cartellaSelezionata === 'none', 'hover:bg-gray-50': cartellaSelezionata !== 'none'}"
+                     class="flex items-center justify-between p-3 rounded-lg border cursor-pointer mb-3">
+                    <div class="flex items-center">
+                        <i class="fas fa-inbox text-gray-600 mr-3"></i>
+                        <span class="font-medium">Senza cartella</span>
+                    </div>
+                    <span class="text-sm text-gray-500" x-text="preventivisSenzaCartella"></span>
+                </div>
+
+                <!-- Cartelle personalizzate -->
+                <div class="space-y-2">
+                    <template x-for="cartella in cartelle" :key="cartella.id">
+                        <div @click="selezionaCartella(cartella.id)" 
+                             :class="{'bg-blue-50 border-blue-200 text-blue-700': cartellaSelezionata === cartella.id, 'hover:bg-gray-50': cartellaSelezionata !== cartella.id}"
+                             class="group flex items-center justify-between p-3 rounded-lg border cursor-pointer">
+                            <div class="flex items-center flex-1 min-w-0">
+                                <i :class="cartella.icona || 'fas fa-folder'" 
+                                   :style="cartella.colore ? `color: ${cartella.colore}` : ''"
+                                   class="mr-3 text-gray-600"></i>
+                                <span class="font-medium truncate" x-text="cartella.nome"></span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm text-gray-500" x-text="cartella.numero_preventivi"></span>
+                                <div class="hidden group-hover:flex items-center space-x-1">
+                                    <button @click.stop="modificaCartella(cartella)" 
+                                            class="p-1 rounded hover:bg-gray-200">
+                                        <i class="fas fa-edit text-xs text-gray-500"></i>
+                                    </button>
+                                    <button @click.stop="eliminaCartella(cartella.id)" 
+                                            class="p-1 rounded hover:bg-gray-200">
+                                        <i class="fas fa-trash text-xs text-red-500"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Tab Vista (Attivi/Cestino) -->
+            <div class="border-t border-gray-200 p-4">
+                <div class="flex space-x-1 border border-gray-300 rounded-md p-1">
+                    <button @click="switchView('attivi')" 
+                            :class="{'bg-blue-600 text-white': currentView === 'attivi', 'bg-gray-100 text-gray-700 hover:bg-gray-200': currentView !== 'attivi'}"
+                            class="flex-1 px-3 py-2 text-sm font-medium rounded-md focus:outline-none">
+                        <i class="fas fa-list-ul mr-2"></i>Attivi
+                    </button>
+                    <button @click="switchView('cestinati')" 
+                            :class="{'bg-red-600 text-white': currentView === 'cestinati', 'bg-gray-100 text-gray-700 hover:bg-gray-200': currentView !== 'cestinati'}"
+                            class="flex-1 px-3 py-2 text-sm font-medium rounded-md focus:outline-none">
+                        <i class="fas fa-trash mr-2"></i>Cestino
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Stats Cards -->
-        <div class="bg-white px-6 py-4 border-b border-gray-200">
-            <div x-show="currentView === 'attivi'" class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                <div class="overflow-hidden rounded-lg bg-gray-50 px-4 py-3 border">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                            <i class="fas fa-file-invoice text-blue-600 text-xl"></i>
+        <!-- Contenuto Principale -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Stats Cards - Sopra a tutta larghezza -->
+            <div class="bg-white px-6 py-5 border-b border-gray-200">
+                <div x-show="currentView === 'attivi'" class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                    <div class="overflow-hidden rounded-lg bg-gray-50 px-4 py-4 border">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-file-invoice text-blue-600 text-xl"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-500">Preventivi</p>
+                                <p class="text-sm font-medium text-gray-500">Attivi</p>
+                                <p class="text-xl font-semibold text-gray-900" x-text="stats.totali || 0">4</p>
+                            </div>
                         </div>
-                        <div class="ml-3">
-                            <p class="text-sm font-medium text-gray-500">Preventivi Attivi</p>
-                            <p class="text-lg font-semibold text-gray-900" x-text="stats.totali || 0">0</p>
                     </div>
-                </div>
-            </div>
 
-                <div class="overflow-hidden rounded-lg bg-gray-50 px-4 py-3 border">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                            <i class="fas fa-clock text-yellow-600 text-xl"></i>
+                    <div class="overflow-hidden rounded-lg bg-gray-50 px-4 py-4 border">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-clock text-yellow-600 text-xl"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-500">In</p>
+                                <p class="text-sm font-medium text-gray-500">Attesa</p>
+                                <p class="text-xl font-semibold text-gray-900" x-text="stats.in_attesa || 0">0</p>
+                            </div>
                         </div>
-                        <div class="ml-3">
-                            <p class="text-sm font-medium text-gray-500">In Attesa</p>
-                            <p class="text-lg font-semibold text-gray-900" x-text="stats.in_attesa || 0">0</p>
                     </div>
-                </div>
-            </div>
 
-                <div class="overflow-hidden rounded-lg bg-gray-50 px-4 py-3 border">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                            <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                    <div class="overflow-hidden rounded-lg bg-gray-50 px-4 py-4 border">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-500">Approvati</p>
+                                <p class="text-xl font-semibold text-gray-900" x-text="stats.approvati || 0">0</p>
+                            </div>
                         </div>
-                        <div class="ml-3">
-                            <p class="text-sm font-medium text-gray-500">Approvati</p>
-                            <p class="text-lg font-semibold text-gray-900" x-text="stats.approvati || 0">0</p>
                     </div>
-                </div>
-            </div>
 
-                <div class="overflow-hidden rounded-lg bg-gray-50 px-4 py-3 border">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                            <i class="fas fa-euro-sign text-green-600 text-xl"></i>
+                    <div class="overflow-hidden rounded-lg bg-gray-50 px-4 py-4 border">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-euro-sign text-green-600 text-xl"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-500">Valore</p>
+                                <p class="text-sm font-medium text-gray-500">Totale</p>
+                                <p class="text-xl font-semibold text-gray-900" x-text="formatCurrency(stats.valore_totale || 0)">122,00 €</p>
+                            </div>
                         </div>
-                        <div class="ml-3">
-                            <p class="text-sm font-medium text-gray-500">Valore Totale</p>
-                            <p class="text-lg font-semibold text-gray-900" x-text="formatCurrency(stats.valore_totale || 0)">€0,00</p>
-                    </div>
                     </div>
                 </div>
-            </div>
-            
-            <div x-show="currentView === 'cestinati'" class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                <div class="overflow-hidden rounded-lg bg-gray-50 px-4 py-3 border">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                            <i class="fas fa-trash-alt text-red-600 text-xl"></i>
+                
+                <div x-show="currentView === 'cestinati'" class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                    <div class="overflow-hidden rounded-lg bg-gray-50 px-4 py-4 border">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-trash-alt text-red-600 text-xl"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-500">Nel Cestino</p>
+                                <p class="text-xl font-semibold text-gray-900" x-text="stats.totali || 0">0</p>
+                            </div>
                         </div>
-                        <div class="ml-3">
-                            <p class="text-sm font-medium text-gray-500">Nel Cestino</p>
-                            <p class="text-lg font-semibold text-gray-900" x-text="stats.totali || 0">0</p>
+                    </div>
+                    <!-- Placeholder per mantenere il layout uniforme -->
+                    <div class="hidden lg:block"></div>
+                    <div class="hidden lg:block"></div>
+                    <div class="hidden lg:block"></div>
+                </div>
+            </div>
+
+            <!-- Filtri e Ricerca -->
+            <div class="bg-white px-6 py-4 border-b border-gray-200">
+                <div class="flex items-center space-x-4">
+                    <!-- Ricerca -->
+                    <div class="flex-1">
+                        <div class="relative">
+                            <input 
+                                type="text" 
+                                x-model="filters.search"
+                                @input.debounce.500ms="loadPreventivi()"
+                                class="block w-full rounded-md border-gray-300 pl-10 pr-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                placeholder="Cerca per numero, cliente, oggetto..."
+                            >
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-search text-gray-400"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filtro Stato -->
+                    <div class="w-48">
+                        <select 
+                            x-model="filters.stato"
+                            @change="loadPreventivi()"
+                            class="block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-sm focus:border-blue-500 focus:ring-blue-500"
+                        >
+                            <option value="">Tutti gli stati</option>
+                            <option value="bozza">Bozza</option>
+                            <option value="inviato">Inviato</option>
+                            <option value="approvato">Approvato</option>
+                            <option value="rifiutato">Rifiutato</option>
+                            <option value="scaduto">Scaduto</option>
+                        </select>
+                    </div>
+
+                    <!-- Ordinamento -->
+                    <div class="w-48">
+                        <select 
+                            x-model="filters.sort"
+                            @change="loadPreventivi()"
+                            class="block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-sm focus:border-blue-500 focus:ring-blue-500"
+                        >
+                            <option value="created_at_desc">Più recenti</option>
+                            <option value="created_at_asc">Più vecchi</option>
+                            <option value="numero_asc">Numero (A-Z)</option>
+                            <option value="numero_desc">Numero (Z-A)</option>
+                            <option value="cliente_asc">Cliente (A-Z)</option>
+                            <option value="valore_desc">Valore (Alto-Basso)</option>
+                        </select>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Filtri e Ricerca -->
-        <div class="bg-white px-6 py-4 border-b border-gray-200">
-            <div class="flex items-center space-x-4">
-            <!-- Ricerca -->
-                <div class="flex-1">
-                    <div class="relative">
-                    <input 
-                        type="text" 
-                        x-model="filters.search"
-                        @input.debounce.500ms="loadPreventivi()"
-                            class="block w-full rounded-md border-gray-300 pl-10 pr-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
-                        placeholder="Cerca per numero, cliente, oggetto..."
-                    >
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fas fa-search text-gray-400"></i>
+            <!-- Lista Preventivi - Occupa tutto lo spazio rimanente -->
+            <div class="flex-1 overflow-y-auto bg-gray-50">
+                <!-- Loading Spinner -->
+                <div x-show="loading" class="flex justify-center items-center h-64">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+
+                <!-- Lista Preventivi -->
+                <div x-show="!loading" class="p-6">
+                    <div x-show="preventivi.length === 0" class="text-center py-12">
+                        <i class="fas fa-file-invoice text-gray-400 text-4xl mb-4"></i>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">Nessun preventivo trovato</h3>
+                        <p class="text-gray-500 mb-4">
+                            <span x-show="currentView === 'attivi'">Non ci sono preventivi in questa sezione.</span>
+                            <span x-show="currentView === 'cestinati'">Il cestino è vuoto.</span>
+                        </p>
+                        <a href="/preventivo/nuovo" 
+                           x-show="currentView === 'attivi'"
+                           class="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500">
+                            <i class="fas fa-plus mr-2"></i>
+                            Crea Primo Preventivo
+                        </a>
                     </div>
-                </div>
-            </div>
 
-            <!-- Filtro Stato -->
-                <div class="w-48">
-                <select 
-                    x-model="filters.stato"
-                    @change="loadPreventivi()"
-                        class="block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-sm focus:border-blue-500 focus:ring-blue-500"
-                >
-                    <option value="">Tutti gli stati</option>
-                    <option value="bozza">Bozza</option>
-                    <option value="inviato">Inviato</option>
-                    <option value="approvato">Approvato</option>
-                    <option value="rifiutato">Rifiutato</option>
-                    <option value="scaduto">Scaduto</option>
-                </select>
-            </div>
-
-            <!-- Ordinamento -->
-                <div class="w-48">
-                <select 
-                    x-model="filters.sort"
-                    @change="loadPreventivi()"
-                        class="block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-sm focus:border-blue-500 focus:ring-blue-500"
-                >
-                    <option value="created_at_desc">Più recenti</option>
-                    <option value="created_at_asc">Più vecchi</option>
-                        <option value="numero_asc">Numero (A-Z)</option>
-                        <option value="numero_desc">Numero (Z-A)</option>
-                        <option value="cliente_asc">Cliente (A-Z)</option>
-                        <option value="valore_desc">Valore (Alto-Basso)</option>
-                </select>
-            </div>
-        </div>
-    </div>
-
-    <!-- Lista Preventivi -->
-        <div class="flex-1 overflow-y-auto bg-gray-50">
-            <!-- Loading Spinner -->
-            <div x-show="loading" class="flex justify-center items-center h-64">
-                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            </div>
-
-            <!-- Lista Preventivi -->
-            <div x-show="!loading" class="p-6">
-                <div x-show="preventivi.length === 0" class="text-center py-12">
-                    <i class="fas fa-file-invoice text-gray-400 text-4xl mb-4"></i>
-                    <h3 class="text-lg font-medium text-gray-900 mb-2">Nessun preventivo trovato</h3>
-                    <p class="text-gray-500 mb-4">
-                        <span x-show="currentView === 'attivi'">Non ci sono preventivi in questa sezione.</span>
-                        <span x-show="currentView === 'cestinati'">Il cestino è vuoto.</span>
-                    </p>
-                    <a href="/preventivo/nuovo" 
-                       x-show="currentView === 'attivi'"
-                       class="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500">
-                        <i class="fas fa-plus mr-2"></i>
-                        Crea Primo Preventivo
-                    </a>
-                </div>
-
-                <!-- Griglia Preventivi -->
-                <div x-show="preventivi.length > 0" class="grid grid-cols-1 gap-4">
-                    <template x-for="preventivo in preventivi" :key="preventivo.id">
-                        <div class="bg-white rounded-lg shadow border border-gray-200 p-6">
-                            <div class="flex items-start justify-between">
-                                <!-- Info Principale -->
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex items-center space-x-2 mb-2">
-                                        <h3 class="text-lg font-semibold text-gray-900 truncate" x-text="preventivo.numero_preventivo"></h3>
-                                        <span :class="getStatoClass(preventivo.stato_preventivo)" 
-                                              class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                                              x-text="preventivo.stato_preventivo"></span>
-                                        <!-- Badge Cartella -->
-                                        <span x-show="preventivo.cartella_nome" 
-                                              :style="preventivo.cartella_colore ? `background-color: ${preventivo.cartella_colore}20; color: ${preventivo.cartella_colore}; border-color: ${preventivo.cartella_colore}` : ''"
-                                              class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border">
-                                            <i class="fas fa-folder mr-1"></i>
-                                            <span x-text="preventivo.cartella_nome"></span>
-                                        </span>
-                                    </div>
-                                    <p class="text-sm text-gray-600 mb-1" x-text="preventivo.oggetto_preventivo"></p>
-                                    <p class="text-sm text-gray-500">Cliente: <span x-text="preventivo.nome_cliente || 'N/A'"></span></p>
-                                    <div class="flex items-center space-x-4 mt-3">
-                                        <p class="text-sm text-gray-500">
-                                            <span x-show="currentView === 'attivi'">Creato: </span>
-                                            <span x-show="currentView === 'cestinati'">Cestinato: </span>
-                                            <span x-text="formatDate(currentView === 'attivi' ? preventivo.created_at : preventivo.cestinato_il)"></span>
-                                        </p>
-                                        <p class="text-sm font-medium text-gray-900" x-text="formatCurrency(preventivo.valore_totale_lordo || 0)"></p>
-                                    </div>
-                                </div>
-
-                                <!-- Azioni -->
-                                <div class="flex items-center space-x-2 ml-4">
-                                    <!-- Dropdown Spostamento in Cartella (solo vista attivi) -->
-                                    <div x-show="currentView === 'attivi'" class="relative" x-data="{ showDropdown: false }">
-                                        <button @click="showDropdown = !showDropdown" 
-                                                class="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200">
-                                            <i class="fas fa-folder mr-1"></i>
-                                            Cartella
-                                        </button>
-                                        <div x-show="showDropdown" 
-                                             @click.away="showDropdown = false"
-                                             class="absolute right-0 z-10 mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg">
-                                            <div class="py-1">
-                                                <button @click="spostaInCartella(preventivo.id, null); showDropdown = false" 
-                                                        class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                    <i class="fas fa-inbox mr-2"></i>Rimuovi da cartella
-                                                </button>
-                                                <template x-for="cartella in cartelle" :key="cartella.id">
-                                                    <button @click="spostaInCartella(preventivo.id, cartella.id); showDropdown = false" 
-                                                            class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                        <i :class="cartella.icona || 'fas fa-folder'" class="mr-2"></i>
-                                                        <span x-text="cartella.nome"></span>
-                                                    </button>
-                                                </template>
-                                            </div>
+                    <!-- Griglia Preventivi -->
+                    <div x-show="preventivi.length > 0" class="grid grid-cols-1 gap-4">
+                        <template x-for="preventivo in preventivi" :key="preventivo.id">
+                            <div class="bg-white rounded-lg shadow border border-gray-200 p-6">
+                                <div class="flex items-start justify-between">
+                                    <!-- Info Principale -->
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center space-x-2 mb-2">
+                                            <h3 class="text-lg font-semibold text-gray-900 truncate" x-text="preventivo.numero_preventivo"></h3>
+                                            <span :class="getStatoClass(preventivo.stato_preventivo)" 
+                                                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                                                  x-text="preventivo.stato_preventivo"></span>
+                                            <!-- Badge Cartella -->
+                                            <span x-show="preventivo.cartella_nome" 
+                                                  :style="preventivo.cartella_colore ? `background-color: ${preventivo.cartella_colore}20; color: ${preventivo.cartella_colore}; border-color: ${preventivo.cartella_colore}` : ''"
+                                                  class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border">
+                                                <i class="fas fa-folder mr-1"></i>
+                                                <span x-text="preventivo.cartella_nome"></span>
+                                            </span>
+                                        </div>
+                                        <p class="text-sm text-gray-600 mb-1" x-text="preventivo.oggetto_preventivo"></p>
+                                        <p class="text-sm text-gray-500">Cliente: <span x-text="preventivo.nome_cliente || 'N/A'"></span></p>
+                                        <div class="flex items-center space-x-4 mt-3">
+                                            <p class="text-sm text-gray-500">
+                                                <span x-show="currentView === 'attivi'">Creato: </span>
+                                                <span x-show="currentView === 'cestinati'">Cestinato: </span>
+                                                <span x-text="formatDate(currentView === 'attivi' ? preventivo.created_at : preventivo.cestinato_il)"></span>
+                                            </p>
+                                            <p class="text-sm font-medium text-gray-900" x-text="formatCurrency(preventivo.valore_totale_lordo || 0)"></p>
                                         </div>
                                     </div>
 
-                                    <!-- Azioni standard -->
-                                    <div x-show="currentView === 'attivi'" class="flex space-x-1">
-                                        <a :href="`/preventivo/${preventivo.id}/visualizza`" 
-                                           class="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200">
-                                            <i class="fas fa-eye mr-1"></i>Visualizza
-                                        </a>
-                                        <a :href="`/preventivo/${preventivo.id}/modifica`" 
-                                           class="inline-flex items-center rounded-md bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-200">
-                                            <i class="fas fa-edit mr-1"></i>Modifica
-                                        </a>
-                                        <a :href="`/preventivo/${preventivo.id}/pdf`" 
-                                           class="inline-flex items-center rounded-md bg-green-100 px-2 py-1 text-xs font-medium text-green-700 hover:bg-green-200">
-                                            <i class="fas fa-file-pdf mr-1"></i>PDF
-                                        </a>
-                                        <button @click="cestinaPreventivo(preventivo.id)" 
-                                                class="inline-flex items-center rounded-md bg-red-100 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-200">
-                                            <i class="fas fa-trash mr-1"></i>Cestina
-                                        </button>
-                                    </div>
+                                    <!-- Azioni -->
+                                    <div class="flex items-center space-x-2 ml-4">
+                                        <!-- Dropdown Spostamento in Cartella (solo vista attivi) -->
+                                        <div x-show="currentView === 'attivi'" class="relative" x-data="{ showDropdown: false }">
+                                            <button @click="showDropdown = !showDropdown" 
+                                                    class="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200">
+                                                <i class="fas fa-folder mr-1"></i>
+                                                Cartella
+                                            </button>
+                                            <div x-show="showDropdown" 
+                                                 @click.away="showDropdown = false"
+                                                 class="absolute right-0 z-10 mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg">
+                                                <div class="py-1">
+                                                    <button @click="spostaInCartella(preventivo.id, null); showDropdown = false" 
+                                                            class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                        <i class="fas fa-inbox mr-2"></i>Rimuovi da cartella
+                                                    </button>
+                                                    <template x-for="cartella in cartelle" :key="cartella.id">
+                                                        <button @click="spostaInCartella(preventivo.id, cartella.id); showDropdown = false" 
+                                                                class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                            <i :class="cartella.icona || 'fas fa-folder'" class="mr-2"></i>
+                                                            <span x-text="cartella.nome"></span>
+                                                        </button>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </div>
 
-                                    <div x-show="currentView === 'cestinati'" class="flex space-x-1">
-                                        <button @click="ripristinaPreventivo(preventivo.id)" 
-                                                class="inline-flex items-center rounded-md bg-green-100 px-2 py-1 text-xs font-medium text-green-700 hover:bg-green-200">
-                                            <i class="fas fa-undo mr-1"></i>Ripristina
-                                        </button>
-                                        <button @click="eliminaDefinitivamentePreventivo(preventivo.id)" 
-                                                class="inline-flex items-center rounded-md bg-red-100 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-200">
-                                            <i class="fas fa-trash-alt mr-1"></i>Elimina
-                                        </button>
+                                        <!-- Azioni standard -->
+                                        <div x-show="currentView === 'attivi'" class="flex space-x-1">
+                                            <a :href="`/preventivo/${preventivo.id}/visualizza`" 
+                                               class="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200">
+                                                <i class="fas fa-eye mr-1"></i>Visualizza
+                                            </a>
+                                            <a :href="`/preventivo/${preventivo.id}/modifica`" 
+                                               class="inline-flex items-center rounded-md bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-200">
+                                                <i class="fas fa-edit mr-1"></i>Modifica
+                                            </a>
+                                            <a :href="`/preventivo/${preventivo.id}/pdf`" 
+                                               class="inline-flex items-center rounded-md bg-green-100 px-2 py-1 text-xs font-medium text-green-700 hover:bg-green-200">
+                                                <i class="fas fa-file-pdf mr-1"></i>PDF
+                                            </a>
+                                            <button @click="cestinaPreventivo(preventivo.id)" 
+                                                    class="inline-flex items-center rounded-md bg-red-100 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-200">
+                                                <i class="fas fa-trash mr-1"></i>Cestina
+                                            </button>
+                                        </div>
+
+                                        <div x-show="currentView === 'cestinati'" class="flex space-x-1">
+                                            <button @click="ripristinaPreventivo(preventivo.id)" 
+                                                    class="inline-flex items-center rounded-md bg-green-100 px-2 py-1 text-xs font-medium text-green-700 hover:bg-green-200">
+                                                <i class="fas fa-undo mr-1"></i>Ripristina
+                                            </button>
+                                            <button @click="eliminaDefinitivamentePreventivo(preventivo.id)" 
+                                                    class="inline-flex items-center rounded-md bg-red-100 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-200">
+                                                <i class="fas fa-trash-alt mr-1"></i>Elimina
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </template>
+                        </template>
+                    </div>
+
+                    <!-- Pulsante Svuota Cestino (mostra solo in vista cestino) -->
+                    <div x-show="currentView === 'cestinati' && preventivi.length > 0" class="mt-6 text-center">
+                        <button @click="svuotaTuttoCestino()" 
+                                class="inline-flex items-center rounded-md bg-red-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700">
+                            <i class="fas fa-eraser mr-2"></i>Svuota Tutto il Cestino
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
