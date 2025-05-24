@@ -59,13 +59,17 @@ async def test_simple(request: Request):
 
 
 @app.get("/preventivo/nuovo", response_class=HTMLResponse)
-async def nuovo_preventivo(request: Request):
+async def nuovo_preventivo(
+    request: Request,
+    template_id: Optional[str] = Query(None, description="ID del template da utilizzare")
+):
     """
-    Form per creare un nuovo preventivo
+    Form per creare un nuovo preventivo, opzionalmente con un template preselezionato
     """
     return templates.TemplateResponse("preventivo_form.html", {
         "request": request,
-        "preventivo_id": None
+        "preventivo_id": None,
+        "preselected_template_id": template_id
     })
 
 
@@ -449,9 +453,47 @@ async def lista_template_utente(
     template_service = DocumentTemplateService(db)
     templates_db = template_service.get_user_templates(user_id, document_type)
     
-    # Converte in formato JSON-serializable usando il modello Pydantic DocumentTemplateResponse
-    return [DocumentTemplateResponse.from_orm(t) for t in templates_db] # from_orm è per Pydantic V1
-    # Per Pydantic V2: return [DocumentTemplateResponse.model_validate(t) for t in templates_db]
+    # Converte manualmente i template per renderli compatibili con DocumentTemplateResponse
+    result = []
+    for template in templates_db:
+        # Crea un dizionario con tutti i dati del template
+        template_dict = {
+            "id": str(template.id),
+            "user_id": str(template.user_id),
+            "name": template.name,
+            "description": template.description,
+            "document_type": template.document_type,
+            "page_format": template.page_format,
+            "page_orientation": template.page_orientation,
+            "margins": template.margins,
+            "custom_styles": template.custom_styles,
+            "is_default": template.is_default,
+            "is_public": template.is_public,
+            "version": template.version,
+            "created_at": template.created_at,
+            "updated_at": template.updated_at
+        }
+        
+        # Gestisci module_composition in modo speciale
+        if isinstance(template.module_composition, dict):
+            # Converti da dict a ModuleComposition
+            from .models import ModuleComposition, ModuleConfig
+            try:
+                modules = []
+                for module_dict in template.module_composition.get("modules", []):
+                    modules.append(ModuleConfig(**module_dict))
+                template_dict["module_composition"] = ModuleComposition(modules=modules)
+            except Exception as e:
+                print(f"Errore nella conversione di module_composition per template {template.id}: {e}")
+                # Fallback: crea una composizione vuota
+                template_dict["module_composition"] = ModuleComposition(modules=[])
+        else:
+            template_dict["module_composition"] = template.module_composition
+        
+        # Crea l'oggetto DocumentTemplateResponse dal dizionario
+        result.append(DocumentTemplateResponse(**template_dict))
+    
+    return result
 
 @app.post("/templates", response_class=JSONResponse, status_code=status.HTTP_201_CREATED)
 async def crea_template(
@@ -502,8 +544,41 @@ async def ottieni_template(
     if not template:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template non trovato")
     
-    return DocumentTemplateResponse.from_orm(template) # from_orm per Pydantic V1
-    # Per Pydantic V2: return DocumentTemplateResponse.model_validate(template)
+    # Converti manualmente il template per renderlo compatibile con DocumentTemplateResponse
+    template_dict = {
+        "id": str(template.id),
+        "user_id": str(template.user_id),
+        "name": template.name,
+        "description": template.description,
+        "document_type": template.document_type,
+        "page_format": template.page_format,
+        "page_orientation": template.page_orientation,
+        "margins": template.margins,
+        "custom_styles": template.custom_styles,
+        "is_default": template.is_default,
+        "is_public": template.is_public,
+        "version": template.version,
+        "created_at": template.created_at,
+        "updated_at": template.updated_at
+    }
+    
+    # Gestisci module_composition in modo speciale
+    if isinstance(template.module_composition, dict):
+        # Converti da dict a ModuleComposition
+        from .models import ModuleComposition, ModuleConfig
+        try:
+            modules = []
+            for module_dict in template.module_composition.get("modules", []):
+                modules.append(ModuleConfig(**module_dict))
+            template_dict["module_composition"] = ModuleComposition(modules=modules)
+        except Exception as e:
+            print(f"Errore nella conversione di module_composition per template {template.id}: {e}")
+            # Fallback: crea una composizione vuota
+            template_dict["module_composition"] = ModuleComposition(modules=[])
+    else:
+        template_dict["module_composition"] = template.module_composition
+    
+    return DocumentTemplateResponse(**template_dict)
 
 @app.put("/templates/{template_id}", response_class=JSONResponse)
 async def aggiorna_template(
@@ -579,8 +654,41 @@ async def ottieni_template_default(
         # Se non esiste un template default, crea uno di default
         template = template_service.create_default_template_for_user(user_id)
     
-    return DocumentTemplateResponse.from_orm(template) # from_orm per Pydantic V1
-    # Per Pydantic V2: return DocumentTemplateResponse.model_validate(template)
+    # Converti manualmente il template per renderlo compatibile con DocumentTemplateResponse
+    template_dict = {
+        "id": str(template.id),
+        "user_id": str(template.user_id),
+        "name": template.name,
+        "description": template.description,
+        "document_type": template.document_type,
+        "page_format": template.page_format,
+        "page_orientation": template.page_orientation,
+        "margins": template.margins,
+        "custom_styles": template.custom_styles,
+        "is_default": template.is_default,
+        "is_public": template.is_public,
+        "version": template.version,
+        "created_at": template.created_at,
+        "updated_at": template.updated_at
+    }
+    
+    # Gestisci module_composition in modo speciale
+    if isinstance(template.module_composition, dict):
+        # Converti da dict a ModuleComposition
+        from .models import ModuleComposition, ModuleConfig
+        try:
+            modules = []
+            for module_dict in template.module_composition.get("modules", []):
+                modules.append(ModuleConfig(**module_dict))
+            template_dict["module_composition"] = ModuleComposition(modules=modules)
+        except Exception as e:
+            print(f"Errore nella conversione di module_composition per template {template.id}: {e}")
+            # Fallback: crea una composizione vuota
+            template_dict["module_composition"] = ModuleComposition(modules=[])
+    else:
+        template_dict["module_composition"] = template.module_composition
+    
+    return DocumentTemplateResponse(**template_dict)
 
 @app.post("/templates/validate", response_class=JSONResponse)
 async def valida_composizione_moduli(

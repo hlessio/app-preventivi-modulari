@@ -132,7 +132,9 @@
             <div class="p-4 space-y-4">
                 
                 <!-- 1. Dati Azienda (Read-only, precaricati) - Compatto -->
-                <div class="form-section bg-gray-50 rounded-lg border border-gray-200 p-3">
+                <div x-show="isModuleVisible('intestazione_azienda')" 
+                     class="form-section bg-gray-50 rounded-lg border border-gray-200 p-3" 
+                     data-module="intestazione_azienda">
                     <h3 class="text-sm font-semibold text-gray-900 mb-2 flex items-center">
                         <i class="fas fa-building text-blue-600 mr-2 text-xs"></i>
                         Dati Azienda
@@ -158,7 +160,9 @@
                 </div>
 
                 <!-- 2. Dati Cliente - Compatto -->
-                <div class="form-section bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+                <div x-show="isModuleVisible('intestazione_cliente')" 
+                     class="form-section bg-white rounded-lg shadow-sm border border-gray-200 p-3" 
+                     data-module="intestazione_cliente">
                     <h3 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
                         <i class="fas fa-user text-blue-600 mr-2 text-xs"></i>
                         Dati Cliente
@@ -236,29 +240,14 @@
                 </div>
 
                 <!-- 3. Informazioni Preventivo - Compatto -->
-                <div class="form-section bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+                <div x-show="isModuleVisible('metadati_preventivo')" 
+                     class="form-section bg-white rounded-lg shadow-sm border border-gray-200 p-3" 
+                     data-module="metadati_preventivo">
                     <h3 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
                         <i class="fas fa-info-circle text-blue-600 mr-2 text-xs"></i>
                         Info Preventivo
                     </h3>
                     <div class="space-y-2">
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Template</label>
-                            <div class="flex space-x-1">
-                                <select x-model="formData.template_id"
-                                        @change="updateAnteprima()"
-                                        class="flex-1 rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 form-input-sm">
-                                    <option value="">Default</option>
-                                    <template x-for="template in availableTemplates" :key="template.id">
-                                        <option :value="template.id" x-text="template.name"></option>
-                                    </template>
-                                </select>
-                                <button @click="loadTemplates()" 
-                                        class="inline-flex items-center px-2 py-1 border border-gray-300 rounded-md text-xs text-gray-700 bg-white hover:bg-gray-50">
-                                    <i class="fas fa-sync-alt"></i>
-                                </button>
-                            </div>
-                        </div>
                         <div>
                             <label class="block text-xs font-medium text-gray-700 mb-1">Oggetto Preventivo *</label>
                             <input type="text" 
@@ -278,7 +267,9 @@
                 </div>
 
                 <!-- 4. Voci Preventivo - Compatto -->
-                <div class="form-section bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+                <div x-show="isModuleVisible('tabella_preventivo')" 
+                     class="form-section bg-white rounded-lg shadow-sm border border-gray-200 p-3" 
+                     data-module="tabella_preventivo">
                     <div class="flex items-center justify-between mb-3">
                         <h3 class="text-sm font-semibold text-gray-900 flex items-center">
                             <i class="fas fa-list text-blue-600 mr-2 text-xs"></i>
@@ -357,7 +348,9 @@
                 </div>
 
                 <!-- 5. Condizioni Generali - Compatto -->
-                <div class="form-section bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+                <div x-show="isModuleVisible('condizioni_generali')" 
+                     class="form-section bg-white rounded-lg shadow-sm border border-gray-200 p-3" 
+                     data-module="condizioni_generali">
                     <h3 class="text-sm font-semibold text-gray-900 mb-2 flex items-center">
                         <i class="fas fa-file-contract text-blue-600 mr-2 text-xs"></i>
                         Condizioni Generali
@@ -368,6 +361,67 @@
                               rows="3"
                               placeholder="Inserisci le condizioni di pagamento, garanzie, clausole speciali...">
                     </textarea>
+                </div>
+
+                <!-- 6. Footer Preventivo - Compatto -->
+                <div x-show="isModuleVisible('footer_preventivo')" 
+                     class="form-section bg-white rounded-lg shadow-sm border border-gray-200 p-3" 
+                     data-module="footer_preventivo">
+                    <h3 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                        <i class="fas fa-signature text-blue-600 mr-2 text-xs"></i>
+                        Footer e Note
+                    </h3>
+                    <div class="space-y-2">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Note Finali</label>
+                            <textarea x-model="formData.footer_preventivo.note"
+                                      @input="updateAnteprima()"
+                                      class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-xs"
+                                      rows="2"
+                                      placeholder="Ringraziamenti, saluti, note aggiuntive..."></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Contatti Aggiuntivi</label>
+                            <textarea x-model="formData.footer_preventivo.contatti_aggiuntivi"
+                                      @input="updateAnteprima()"
+                                      class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-xs"
+                                      rows="2"
+                                      placeholder="Informazioni di contatto aggiuntive, indirizzi alternativi..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Indicatore moduli nascosti -->
+                <div x-show="selectedTemplate" 
+                     class="form-section bg-blue-50 rounded-lg border border-blue-200 p-3">
+                    <div class="text-center">
+                        <div class="text-xs text-blue-700 mb-2">
+                            <i class="fas fa-puzzle-piece mr-1"></i>
+                            Template attivo: <strong x-text="selectedTemplate?.name"></strong>
+                        </div>
+                        <div class="text-xs text-blue-600" 
+                             x-show="visibleModules.length < 7">
+                            <span x-text="7 - visibleModules.length"></span> sezioni nascoste dal template
+                        </div>
+                        <div class="text-xs text-blue-600" 
+                             x-show="visibleModules.length === 7">
+                            Tutte le sezioni sono visibili
+                        </div>
+                        <div class="mt-2 pt-2 border-t border-blue-200">
+                            <a href="/" class="text-xs text-blue-600 hover:text-blue-800">
+                                <i class="fas fa-arrow-left mr-1"></i>
+                                Torna alla dashboard per cambiare template
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div x-show="!selectedTemplate" 
+                     class="form-section bg-gray-50 rounded-lg border border-gray-200 p-3 text-center">
+                    <div class="text-xs text-gray-600">
+                        <i class="fas fa-file-alt mr-1"></i>
+                        Template standard (tutti i moduli attivi)
+                    </div>
                 </div>
             </div>
         </div>
@@ -398,6 +452,8 @@
         return {
             salvando: false,
             availableTemplates: [], // Lista dei template disponibili
+            selectedTemplate: null, // Template selezionato completo
+            visibleModules: [], // Lista dei moduli visibili basata sul template
             formData: {
                 numero_preventivo: '',
                 oggetto_preventivo: '',
@@ -444,8 +500,15 @@
             init() {
                 console.log('Alpine.js preventivoForm initialized!');
                 
-                // Carica i template disponibili
-                this.loadTemplates();
+                // Ottieni il template preselezionato dal parametro URL
+                const preselectedTemplateId = '{{ preselected_template_id or "" }}';
+                if (preselectedTemplateId) {
+                    this.formData.template_id = preselectedTemplateId;
+                    this.loadTemplateById(preselectedTemplateId);
+                } else {
+                    // Se non c'è template preselezionato, carica la lista e usa il default
+                    this.loadTemplates();
+                }
                 
                 // Inizializza con una voce vuota
                 this.aggiungiVoce();
@@ -454,6 +517,9 @@
                 const preventivo_id = '{{ preventivo_id or "" }}';
                 if (preventivo_id) {
                     this.caricaPreventivo(preventivo_id);
+                } else {
+                    // Se è un nuovo preventivo, inizializza con tutti i moduli visibili
+                    this.updateVisibleModules();
                 }
             },
 
@@ -462,13 +528,83 @@
                     const response = await fetch('/templates?user_id=da2cb935-e023-40dd-9703-d918f1066b24&document_type=preventivo');
                     if (response.ok) {
                         const data = await response.json();
-                        this.availableTemplates = data.templates || [];
+                        this.availableTemplates = data || []; // L'API restituisce direttamente un array
+                        
+                        // Se non c'è template selezionato, usa il default
+                        if (!this.formData.template_id && this.availableTemplates.length > 0) {
+                            const defaultTemplate = this.availableTemplates.find(t => t.is_default);
+                            if (defaultTemplate) {
+                                this.formData.template_id = defaultTemplate.id;
+                                this.selectedTemplate = defaultTemplate;
+                                this.updateVisibleModules();
+                            }
+                        }
                     } else {
                         console.error('Errore nel caricamento template:', response.status);
                     }
                 } catch (error) {
                     console.error('Errore nel caricamento template:', error);
                 }
+            },
+
+            async loadTemplateById(templateId) {
+                try {
+                    const response = await fetch(`/templates/${templateId}?user_id=da2cb935-e023-40dd-9703-d918f1066b24`);
+                    if (response.ok) {
+                        const template = await response.json();
+                        this.selectedTemplate = template;
+                        this.updateVisibleModules();
+                    } else {
+                        console.error('Errore nel caricamento del template:', response.status);
+                        // Fallback: carica tutti i template
+                        this.loadTemplates();
+                    }
+                } catch (error) {
+                    console.error('Errore nel caricamento del template:', error);
+                    // Fallback: carica tutti i template
+                    this.loadTemplates();
+                }
+            },
+
+            updateVisibleModules() {
+                // Aggiorna i moduli visibili in base al template selezionato
+                if (this.selectedTemplate && this.selectedTemplate.module_composition) {
+                    const enabledModules = this.selectedTemplate.module_composition.modules
+                        .filter(module => module.enabled)
+                        .map(module => module.module_name);
+                    
+                    this.visibleModules = enabledModules;
+                } else {
+                    // Se nessun template è selezionato, mostra tutti i moduli
+                    this.visibleModules = [
+                        'intestazione_azienda',
+                        'metadati_preventivo', 
+                        'intestazione_cliente',
+                        'tabella_preventivo',
+                        'sezione_totali',
+                        'condizioni_generali',
+                        'footer_preventivo'
+                    ];
+                }
+                
+                console.log('Moduli visibili:', this.visibleModules);
+            },
+
+            onTemplateChange() {
+                // Quando cambia il template selezionato
+                if (this.formData.template_id) {
+                    this.selectedTemplate = this.availableTemplates.find(t => t.id === this.formData.template_id);
+                } else {
+                    this.selectedTemplate = null;
+                }
+                
+                this.updateVisibleModules();
+                this.updateAnteprima();
+            },
+
+            isModuleVisible(moduleName) {
+                // Verifica se un modulo è visibile
+                return this.visibleModules.includes(moduleName);
             },
 
             aggiungiVoce() {
@@ -578,7 +714,8 @@
                         totale_generale_lordo: this.formData.sezione_totali.totale_generale
                     },
                     elementi_footer: {
-                        note_finali: this.formData.footer_preventivo.note
+                        note_finali: this.formData.footer_preventivo.note,
+                        contatti_aggiuntivi: this.formData.footer_preventivo.contatti_aggiuntivi
                     }
                 };
                 
@@ -679,6 +816,12 @@
                         // Carica il template_id se presente nei metadati
                         if (data.metadati_preventivo && data.metadati_preventivo.template_id) {
                             this.formData.template_id = data.metadati_preventivo.template_id;
+                            
+                            // Trova il template completo nella lista
+                            this.selectedTemplate = this.availableTemplates.find(t => t.id === this.formData.template_id);
+                            if (this.selectedTemplate) {
+                                this.updateVisibleModules();
+                            }
                         }
                         
                         this.rigeneraAnteprima();

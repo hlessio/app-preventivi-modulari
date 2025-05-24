@@ -265,4 +265,24 @@ class DocumentTemplateService:
             DocumentTemplate.is_default == True
         ).update({DocumentTemplate.is_default: False})
         
-        self.db.commit() 
+        self.db.commit()
+    
+    def _convert_template_for_response(self, template: DocumentTemplate) -> DocumentTemplate:
+        """Converte un template dal database per renderlo compatibile con DocumentTemplateResponse"""
+        
+        # Converti module_composition da dict a ModuleComposition se necessario
+        if isinstance(template.module_composition, dict):
+            try:
+                # Crea gli oggetti ModuleConfig dalla lista di dizionari
+                modules = []
+                for module_dict in template.module_composition.get("modules", []):
+                    modules.append(ModuleConfig(**module_dict))
+                
+                # Crea l'oggetto ModuleComposition
+                template.module_composition = ModuleComposition(modules=modules)
+            except Exception as e:
+                print(f"Errore nella conversione di module_composition per template {template.id}: {e}")
+                # Fallback: crea una composizione vuota
+                template.module_composition = ModuleComposition(modules=[])
+        
+        return template 

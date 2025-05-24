@@ -22,7 +22,7 @@ Sviluppare un'applicazione web per la generazione di documenti (inizialmente pre
     *   [X] Backend: API base, logica assemblaggio JSON, rendering Jinja2. (Endpoint di visualizzazione base implementato)
     *   [X] Backend: Validazione input con Pydantic. (Modelli Pydantic creati in `app/models.py` e integrati nell'endpoint `/preventivo/visualizza`)
     *   [X] Backend: Logica di calcolo per totali e subtotali. (Implementato in `app/services/preventivo_calculator.py`)
-    *   [X] Database: Schemi DB, modelli per utenti, moduli, documenti. (SQLAlchemy + SQLite funzionante, servizio CRUD completo)
+    *   [X] Database: Schemi DB, modelli per utenti, moduli, documenti. (SQLAlchemy + PostgreSQL funzionante, servizio CRUD completo)
     *   [X] Frontend: Form input per moduli chiave, interattività tabella preventivo con HTMX. (Layout form preventivi con sidebar e anteprima full-page implementato)
     *   [X] Moduli Chiave Preventivo: `intestazione-azienda`, `intestazione-cliente`, `tabella-preventivo`, `condizioni-generali`, `footer-preventivo`. (Schemi e template HTML/Jinja2 completamente funzionanti)
     *   [X] Schemi JSON per Moduli Chiave: Definiti e pronti per essere usati. (Completato in Fase 0, integrati in Pydantic)
@@ -31,57 +31,62 @@ Sviluppare un'applicazione web per la generazione di documenti (inizialmente pre
 
 ---
 **STATO ATTUALE DELLO SVILUPPO (Aggiornare regolarmente):**
-*   **Data Ultimo Aggiornamento:** 2024-07-27 (Refactoring Layout Form Preventivo)
-*   **Fase Corrente:** Miglioramenti Qualità della Vita (Post Fase 2a)
-*   **Step Attuale:** ✅ **Refactoring Layout Form Preventivo COMPLETATO**
-    *   ✅ **Interfaccia Full-Width:**
-        *   Il form di creazione/modifica preventivo ora utilizza l'intera larghezza del browser.
-        *   Rimossa la limitazione `max-w-7xl` e i margini laterali per la pagina del preventivo.
-        *   Modificato `base.html` per includere un blocco `{% block header %}` e consentire la sua sovrascrittura.
-        *   Modificato `preventivo_form.html` per utilizzare `{% block main_layout %}` e sovrascrivere `{% block header %}` per un header personalizzato e focalizzato.
-    *   ✅ **Sidebar Controlli Fissa e Ottimizzata:**
-        *   La sidebar con i controlli del form ha una larghezza fissa di `320px`.
-        *   Tutti i campi del form sono stati resi più compatti per una migliore usabilità.
-        *   Aggiunte scrollbar personalizzate per la sidebar.
-    *   ✅ **Anteprima Documento Full-Page:**
-        *   L'area di anteprima del documento occupa dinamicamente tutto lo spazio rimanente.
-        *   Corretti gli stili del template `preventivo_unificato.html` per rimuovere le limitazioni di larghezza (es. formato A4) nella visualizzazione web, permettendo all'anteprima di espandersi correttamente.
-    *   ✅ **Header Form Preventivo Ottimizzato:**
-        *   L'header nella pagina di modifica/creazione preventivo è stato ridisegnato per essere più compatto e focalizzato.
-        *   Include ora un'icona dell'app, il titolo "Modifica/Nuovo Preventivo", e il numero del preventivo.
-        *   Rimosso il pulsante "Nuovo Preventivo" e il link "Dashboard" ridondanti in questa vista.
+*   **Data Ultimo Aggiornamento:** 2024-12-19 (Sistema Template Completo)
+*   **Fase Corrente:** Fase 2a Completata - Template Documenti Personalizzabili con UX Migliorata
+*   **Step Attuale:** ✅ **SISTEMA TEMPLATE MODULARE COMPLETATO CON WORKFLOW MIGLIORATO**
+    *   ✅ **Sistema Template Completo:**
+        *   **Template Composer**: Interfaccia drag & drop completa per creare template personalizzati (`/templates/composer`)
+        *   **Database Schema**: Tabella `document_templates` con supporto moduli, formati pagina, stili CSS personalizzati
+        *   **Validazione Template**: Sistema robusto di validazione composizione moduli lato server
+        *   **Template API**: Endpoints completi CRUD per gestione template utente
+        *   **PDF Personalizzati**: Export PDF integrato con template personalizzati tramite WeasyPrint
+    *   ✅ **UX Workflow Rivoluzionato (Dashboard → Form):**
+        *   **Dashboard Template Selector**: Dropdown sofisticato in dashboard per selezione template con:
+            - Lista template disponibili con nome, descrizione, moduli attivi
+            - Indicatori visivi per template default
+            - Anteprima template prima della creazione
+            - Fallback per utenti senza template personalizzati
+        *   **Form Dinamico Modulare**: Form preventivo che mostra/nasconde sezioni in base al template:
+            - Mapping intelligente `intestazione_azienda` → dati azienda, `intestazione_cliente` → dati cliente, ecc.
+            - Controllo visibilità con Alpine.js `x-show` directives
+            - Template precaricato da URL parameter `?template_id=XXX`
+            - Indicatori visivi template attivo e moduli nascosti
+        *   **Template Persistence**: Template_id salvato nei preventivi per consistenza visualizzazione/export
+    *   ✅ **Integrazione PDF Avanzata:**
+        *   Export PDF rispetta template originale del preventivo salvato
+        *   Supporto stili CSS personalizzati per template
+        *   Margini e formati pagina configurabili per template
+        *   Fallback automatico a template default se template originale non disponibile
 *   **Precedenti Step Completati:**
     *   ✅ **Sistema Cestino per Preventivi COMPLETATO** (Qualità della Vita)
         *   ✅ Backend per Soft-Delete Preventivi (campi `stato_record`, `cestinato_il`, servizi e API aggiornate).
         *   ✅ Frontend per Gestione Cestino in Dashboard (logica Alpine.js, viste condizionali, azioni specifiche).
     *   ✅ **Design Integrazione LLM COMPLETATO**
-*   **Prossimi Passi Immediati - Fase 2a: Template Documenti Personalizzabili (4-6 settimane):**
-    1.  ✅ **Export PDF**: Integrazione WeasyPrint per generazione PDF - **COMPLETATO**
-    2.  ✅ **Template Unificato PDF/Web** - **COMPLETATO**
-    3.  ✅ **Database Produzione**: Migrazione da SQLite a PostgreSQL - **COMPLETATO**
-    4.  ✅ **Design Integrazione LLM**: Documento operativo completo - **COMPLETATO**
-    5.  ✅ **Template Documenti Personalizzabili** - **FASE 2a COMPLETATA**
-        *   **Risolti problemi di persistenza template_id e export PDF con template custom.**
-        *   ✅ **Week 1-2: Database & Backend** (4-6 settimane totali) - **COMPLETATO**
-            - [X] Implementa tabelle `document_templates`, `user_preferences`
-            - [X] Crea `DocumentTemplateService`
-            - [X] Estendi rendering engine per template dinamici
-            - [X] API endpoints per gestione template
+    *   ✅ **Refactoring Layout Form Preventivo COMPLETATO**
+        *   ✅ **Interfaccia Full-Width, Sidebar Controlli Fissa, Anteprima Full-Page, Header Ottimizzato**
+    *   ✅ **Template Documenti Personalizzabili - FASE 2a COMPLETATA**
+        *   ✅ **Week 1-2: Database & Backend** - **COMPLETATO**
         *   ✅ **Week 3-4: Frontend Template Composer** - **COMPLETATO**
-            - [X] UI Template Composer con drag & drop
-            - [X] Preview live documents
-            - [X] Gestione formato pagina e orientamento
-            - [X] Salvataggio e caricamento template
         *   ✅ **Week 5-6: Testing & Refinement** - **COMPLETATO**
-            - [X] Test con vari tipi documento
-            - [X] Ottimizzazione performance rendering
-            - [X] UI/UX improvements
-    6.  ✅ **NUOVO: Sistema Cestino per Preventivi (Qualità della Vita)** - **COMPLETATO** (Implementato durante e post Fase 2a)
-    7.  **Fasi Successive**: Implementazione Sistema Cartelle (Qualità della Vita), Integrazione LLM Base (Fase 2b), Module Creation LLM (Fase 2c), Agente LLM Avanzato (Fase 3)
+        *   ✅ **UX Enhancement: Dashboard Template Selection** - **COMPLETATO**
+*   **Prossimi Passi Immediati - Fase 2b: Sistema Cartelle e Integrazione LLM Base (4-6 settimane):**
+    1.  ✅ **Sistema Cartelle per Preventivi (Qualità della Vita)** - **COMPLETATO**
+        - [X] Database: Tabelle cartelle con colori, icone, contatori
+        - [X] Backend: CRUD cartelle e spostamento preventivi
+        - [X] Frontend: Sidebar cartelle in dashboard con gestione completa
+    2.  **Integrazione LLM Base (Fase 2b)** - *DA INIZIARE*
+        - [ ] Setup API LLM (OpenAI/Anthropic)
+        - [ ] Prompt engineering per generazione JSON modulari
+        - [ ] Endpoint LLM → JSON → Template rendering
+        - [ ] UI input linguaggio naturale con validazione/correzione
+    3.  **Module Creation LLM (Fase 2c)** - *DA PIANIFICARE*
+        - [ ] LLM per composizione template intelligente
+        - [ ] Generazione automatica moduli custom
+        - [ ] Suggerimenti template basati su contenuto
 *   **Bloccanti / Domande Aperte:**
-    *   **Nessun bloccante critico**: Tutte le fondamenta sono pronte per l'evoluzione LLM
-    *   **Decisioni Architetturali**: Già definite nel documento di design LLM
-    *   **Setup LLM**: Da implementare nelle prossime fasi (API keys, modelli, etc.)
+    *   **Nessun bloccante critico**: Sistema template modulare completamente funzionante e pronto per LLM
+    *   **Prossima Decisione**: Scelta provider LLM (OpenAI GPT-4, Anthropic Claude, altri)
+    *   **Architettura LLM**: Integrazione già progettata, schema JSON pronti
 
 **Note di Configurazione Ambiente Specifiche:**
 *   **Fix WeasyPrint su macOS (errore `libgobject-2.0-0` not found):**
@@ -92,6 +97,15 @@ Sviluppare un'applicazione web per la generazione di documenti (inizialmente pre
             *   `DYLD_LIBRARY_PATH` dovrebbe includere: `/opt/homebrew/opt/glib/lib`, `/opt/homebrew/opt/pango/lib`, ecc.
     *   **Avvio Server:** È fondamentale utilizzare lo script `start_server.sh` per avviare il server FastAPI. Questo script assicura che le variabili d'ambiente siano impostate correttamente prima dell'avvio di Uvicorn. L'avvio manuale di Uvicorn potrebbe non ereditare queste variabili, causando il fallimento di WeasyPrint. In caso di errore "Address already in use", terminare i processi Uvicorn esistenti (`ps aux | grep uvicorn` e `kill <PID>`) prima di rieseguire `./start_server.sh`.
 
+**Nuove Funzionalità Implementate (Template System):**
+*   **README_TEMPLATE_SYSTEM.md**: Documentazione completa del motore template
+*   **Template Composer**: UI completa per creazione template con drag & drop
+*   **Dashboard Template Dropdown**: Workflow migliorato per selezione template
+*   **Form Dinamico**: Sezioni visibili/nascoste in base al template selezionato
+*   **Template API**: Endpoints CRUD completi per gestione template
+*   **PDF Template-aware**: Export PDF rispetta template personalizzati
+*   **Sistema Cartelle**: Organizzazione preventivi in cartelle colorate con icone
+
 ---
 **Istruzioni per l'Agent AI (Cursor):**
 *   Questo documento serve come **fonte primaria di verità** per il contesto del progetto.
@@ -100,7 +114,7 @@ Sviluppare un'applicazione web per la generazione di documenti (inizialmente pre
 *   Se il codice che stiamo scrivendo o le decisioni che stiamo prendendo sembrano deviare significativamente dall'architettura o dagli obiettivi qui descritti, per favore segnalamelo.
 *   Il tuo contributo nel mantenere questo contesto aggiornato è prezioso!
 
-**Parole Chiave per Ricerca Veloce:** `Architettura JSON`, `JSON Master`, `JSON Modulare`, `HTMX`, `Jinja2`, `MVP Manuale`, `LLM-Ready`, `Sidebar Layout`.
+**Parole Chiave per Ricerca Veloce:** `Architettura JSON`, `JSON Master`, `JSON Modulare`, `HTMX`, `Jinja2`, `MVP Manuale`, `LLM-Ready`, `Sidebar Layout`, `Template System`, `Workflow Dashboard`, `Form Dinamico`.
 ---
 
 **Come Usarlo con Cursor:**

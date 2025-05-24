@@ -26,6 +26,7 @@ class PreventivoService:
             numero_preventivo=preventivo_data.metadati_preventivo.numero_preventivo,
             oggetto_preventivo=preventivo_data.metadati_preventivo.oggetto_preventivo,
             stato_preventivo=preventivo_data.metadati_preventivo.stato_preventivo,
+            template_id=preventivo_data.metadati_preventivo.template_id,
             dati_preventivo=preventivo_json,
             stato_record="attivo"  # Default per nuovi preventivi
         )
@@ -56,6 +57,7 @@ class PreventivoService:
         db_preventivo.numero_preventivo = preventivo_data.metadati_preventivo.numero_preventivo
         db_preventivo.oggetto_preventivo = preventivo_data.metadati_preventivo.oggetto_preventivo
         db_preventivo.stato_preventivo = preventivo_data.metadati_preventivo.stato_preventivo
+        db_preventivo.template_id = preventivo_data.metadati_preventivo.template_id
         db_preventivo.dati_preventivo = preventivo_json
         db_preventivo.updated_at = datetime.utcnow()
         
@@ -83,7 +85,25 @@ class PreventivoService:
         
         # Converte il JSON in PreventivoMasterModel
         try:
-            preventivo_model = PreventivoMasterModel(**db_preventivo.dati_preventivo)
+            # Inizia con il dizionario JSON memorizzato
+            preventivo_dati_dict = db_preventivo.dati_preventivo
+            
+            # Assicurati che 'metadati_preventivo' esista come dizionario
+            # e che preventivo_dati_dict sia effettivamente un dizionario
+            if not isinstance(preventivo_dati_dict, dict):
+                # Questo non dovrebbe accadere se dati_preventivo è sempre un JSON valido
+                print(f"Attenzione: dati_preventivo per {preventivo_id} non è un dict come atteso.")
+                preventivo_dati_dict = {} # Fallback per evitare errori ulteriori
+
+            if not isinstance(preventivo_dati_dict.get('metadati_preventivo'), dict):
+                preventivo_dati_dict['metadati_preventivo'] = {}
+
+            # Imposta o sovrascrivi il template_id nei dati con quello dalla colonna del DB
+            # Converti l'UUID in stringa se presente, altrimenti None
+            preventivo_dati_dict['metadati_preventivo']['template_id'] = str(db_preventivo.template_id) if db_preventivo.template_id else None
+            
+            # Ora crea il PreventivoMasterModel usando il dizionario aggiornato
+            preventivo_model = PreventivoMasterModel(**preventivo_dati_dict)
             # Potremmo voler arricchire il modello con lo stato_record se necessario al chiamante
             return preventivo_model
         except Exception as e:

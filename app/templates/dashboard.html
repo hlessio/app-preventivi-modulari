@@ -111,12 +111,103 @@
                     <i class="fas fa-cogs mr-2"></i>
                     Template Composer
                 </a>
-                <a href="/preventivo/nuovo" 
-                   x-show="currentView === 'attivi'"
-                   class="inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500">
-                    <i class="fas fa-plus mr-2"></i>
-                    Nuovo Preventivo
-                </a>
+                
+                <!-- Dropdown Nuovo Preventivo con Template -->
+                <div x-show="currentView === 'attivi'" class="relative" x-data="{ isOpen: false }">
+                    <button @click="isOpen = !isOpen" 
+                            class="inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500">
+                        <i class="fas fa-plus mr-2"></i>
+                        Nuovo Preventivo
+                        <i class="fas fa-chevron-down ml-2"></i>
+                    </button>
+                    
+                    <div x-show="isOpen" 
+                         @click.away="isOpen = false"
+                         x-transition:enter="transition ease-out duration-100"
+                         x-transition:enter-start="transform opacity-0 scale-95"
+                         x-transition:enter-end="transform opacity-100 scale-100"
+                         x-transition:leave="transition ease-in duration-75"
+                         x-transition:leave-start="transform opacity-100 scale-100"
+                         x-transition:leave-end="transform opacity-0 scale-95"
+                         class="absolute right-0 mt-2 w-80 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
+                        
+                        <div class="px-4 py-3 bg-gray-50 rounded-t-md">
+                            <p class="text-sm font-medium text-gray-900">Scegli un Template</p>
+                            <p class="text-xs text-gray-500">Seleziona il template per il nuovo preventivo</p>
+                        </div>
+                        
+                        <div class="py-1 max-h-64 overflow-y-auto">
+                            <!-- Template di Default -->
+                            <a href="/preventivo/nuovo" 
+                               @click="isOpen = false"
+                               class="group flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900">
+                                <div class="flex items-center flex-1">
+                                    <div class="flex-shrink-0">
+                                        <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-file-alt text-blue-600 text-sm"></i>
+                                        </div>
+                                    </div>
+                                    <div class="ml-3 flex-1">
+                                        <p class="font-medium">Template Standard</p>
+                                        <p class="text-xs text-gray-500">Template predefinito con tutti i moduli</p>
+                                    </div>
+                                </div>
+                                <i class="fas fa-arrow-right text-gray-400 group-hover:text-gray-600"></i>
+                            </a>
+                            
+                            <!-- Divider -->
+                            <div x-show="availableTemplates.length > 0" class="border-t border-gray-100"></div>
+                            
+                            <!-- Template Personalizzati -->
+                            <template x-for="template in availableTemplates" :key="template.id">
+                                <a :href="`/preventivo/nuovo?template_id=${template.id}`" 
+                                   @click="isOpen = false"
+                                   class="group flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900">
+                                    <div class="flex items-center flex-1">
+                                        <div class="flex-shrink-0">
+                                            <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                                                <i class="fas fa-puzzle-piece text-purple-600 text-sm"></i>
+                                            </div>
+                                        </div>
+                                        <div class="ml-3 flex-1">
+                                            <p class="font-medium" x-text="template.name"></p>
+                                            <p class="text-xs text-gray-500" x-text="template.description || 'Template personalizzato'"></p>
+                                            <div class="flex items-center mt-1">
+                                                <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                                                      x-text="`${template.module_composition?.modules?.filter(m => m.enabled).length || 0} moduli`"></span>
+                                                <span x-show="template.is_default" 
+                                                      class="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                    Default
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <i class="fas fa-arrow-right text-gray-400 group-hover:text-gray-600"></i>
+                                </a>
+                            </template>
+                            
+                            <!-- Messaggio se nessun template personalizzato -->
+                            <div x-show="availableTemplates.length === 0" 
+                                 class="px-4 py-3 text-sm text-gray-500 text-center border-t border-gray-100">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Nessun template personalizzato trovato
+                                <br>
+                                <a href="/templates/composer" class="text-blue-600 hover:text-blue-500 text-xs">
+                                    Crea il tuo primo template
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <div class="py-1 bg-gray-50 rounded-b-md">
+                            <a href="/templates/composer" 
+                               class="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900">
+                                <i class="fas fa-plus mr-3 text-gray-400 group-hover:text-gray-600"></i>
+                                Crea nuovo template
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
                     <!-- Pulsante Svuota Cestino (mostra solo in vista cestino) -->
                     <button x-show="currentView === 'cestinati'" 
                             @click="svuotaTuttoCestino()" 
@@ -529,10 +620,12 @@
                 colore: '#007bff',
                 icona: 'fas fa-folder'
             },
+            availableTemplates: [], // Lista dei template per il dropdown
 
             init() {
                 this.loadPreventivi();
                 this.loadCartelle();
+                this.loadTemplates(); // Carica i template per il dropdown
             },
 
             async loadCartelle() {
@@ -828,6 +921,22 @@
             getNomeCartellaSelezionata() {
                 const cartella = this.cartelle.find(c => c.id === this.cartellaSelezionata);
                 return cartella ? cartella.nome : '';
+            },
+
+            async loadTemplates() {
+                try {
+                    const response = await fetch('/templates?user_id=da2cb935-e023-40dd-9703-d918f1066b24&document_type=preventivo');
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.availableTemplates = data || [];
+                    } else {
+                        console.error('Errore nel caricamento template:', response.status);
+                        this.availableTemplates = [];
+                    }
+                } catch (error) {
+                    console.error('Errore nel caricamento template:', error);
+                    this.availableTemplates = [];
+                }
             }
         }
     }
