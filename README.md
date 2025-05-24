@@ -2,6 +2,17 @@
 
 Un'applicazione web per la generazione di preventivi con architettura modulare progettata per future integrazioni LLM.
 
+## 📋 Stato Progetto
+
+**Fase Attuale**: Transizione verso Integrazione LLM  
+**Ultimo Aggiornamento**: 2024-12-17
+
+✅ **Sistema Base Completato** (Fase 1)  
+✅ **Template Unificato PDF/Web** (Ottimizzazione rendering)  
+✅ **Migrazione PostgreSQL** (Database produzione)  
+✅ **Design Integrazione LLM** (Documento operativo completo)  
+🔄 **Prossimo**: Template Documenti Personalizzabili (Fase 2a)
+
 ## ✨ Features
 
 - 📊 **Dashboard interattiva** con lista preventivi e filtri
@@ -135,3 +146,163 @@ Questo progetto è rilasciato sotto licenza MIT. Vedi `LICENSE` per dettagli.
 ---
 
 ⭐ **Star questo repository se ti è stato utile!** 
+
+## 📚 Documentazione
+
+### Documenti Principali
+
+- **[`context.md`](context.md)** - Contesto generale del progetto e stato sviluppo
+- **[`LLM_INTEGRATION_DESIGN.md`](LLM_INTEGRATION_DESIGN.md)** - Design dettagliato integrazione LLM
+- **[`MIGRAZIONE_POSTGRESQL.md`](MIGRAZIONE_POSTGRESQL.md)** - Guida migrazione database
+- **[`README_PDF_EXPORT.md`](README_PDF_EXPORT.md)** - Documentazione export PDF
+
+### Struttura Progetto
+
+```
+app-preventivi2305/
+├── app/                     # Applicazione principale
+│   ├── main.py             # FastAPI application
+│   ├── db_models.py        # Modelli database SQLAlchemy
+│   ├── models.py           # Modelli Pydantic per validazione
+│   ├── database.py         # Configurazione database
+│   ├── services/           # Logica business
+│   │   ├── preventivo_service.py
+│   │   ├── pdf_export_service.py
+│   │   └── preventivo_calculator.py
+│   ├── schemas/            # Schemi JSON modulari
+│   │   ├── preventivo_master.schema.json
+│   │   ├── intestazione_*.schema.json
+│   │   └── ...
+│   └── templates/          # Template Jinja2
+│       ├── preventivo/
+│       │   ├── preventivo_unificato.html
+│       │   └── _*.html     # Moduli componenti
+│       ├── dashboard.html
+│       └── base.html
+├── alembic/                # Migrazioni database
+├── context.md              # Documento contesto progetto
+├── LLM_INTEGRATION_DESIGN.md # Design integrazione LLM
+└── requirements.txt        # Dipendenze Python
+```
+
+## 🚀 Avvio Rapido
+
+### Prerequisiti
+- Python 3.11+
+- PostgreSQL 14+
+- WeasyPrint dependencies (per PDF export)
+
+### Setup
+
+1. **Clone e Environment**
+   ```bash
+   git clone <repository>
+   cd app-preventivi2305
+   python -m venv venv
+   source venv/bin/activate  # Linux/Mac
+   # venv\Scripts\activate    # Windows
+   ```
+
+2. **Dipendenze**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Database**
+   ```bash
+   # Configura .env con DATABASE_URL PostgreSQL
+   alembic upgrade head
+   ```
+
+4. **Avvio**
+   ```bash
+   chmod +x start_server.sh
+   ./start_server.sh
+   ```
+
+## 🏗️ Architettura
+
+### Sistema Attuale (MVP Completato)
+- **Backend**: FastAPI con logica assemblaggio JSON modulare
+- **Database**: PostgreSQL con supporto JSONB  
+- **Frontend**: HTMX + Alpine.js per interattività real-time
+- **Template**: Sistema Jinja2 modulare unificato PDF/Web
+- **PDF Export**: WeasyPrint con ottimizzazione A4
+
+### Prossima Evoluzione (Integrazione LLM)
+- **Template Personalizzabili**: Composizione drag & drop documenti
+- **Moduli Custom**: Creazione moduli tramite LLM  
+- **Agente AI**: Assistente contestuale per popolamento dati
+
+## 📋 Funzionalità Attuali
+
+✅ **Gestione Preventivi**
+- Creazione/modifica preventivi con form modulari
+- Calcolo automatico totali e subtotali
+- Anteprima live durante compilazione
+- Salvataggio e caricamento preventivi
+
+✅ **Export PDF**
+- Generazione PDF ottimizzata per A4
+- Layout identico tra anteprima web e PDF
+- Margini e typography perfetti per stampa
+
+✅ **Dashboard**
+- Lista preventivi con filtri e ricerca
+- Stati preventivo (bozza, inviato, accettato, etc.)
+- Navigazione intuitiva
+
+## 🔮 Roadmap LLM (Fase 2-3)
+
+### Fase 2a: Template Personalizzabili (4-6 settimane)
+- Sistema template documenti componibili
+- UI drag & drop per composizione  
+- Gestione formati multipli (A4, US Letter, etc.)
+
+### Fase 2b: Integrazione LLM Base (3-4 settimane)  
+- Servizio LLM con intent classification
+- Popolamento automatico dati da input naturale
+- Chat widget per assistenza documento
+
+### Fase 2c: Moduli Custom LLM (4-5 settimane)
+- Generazione moduli Jinja2 + JSON Schema via LLM
+- Editor moduli con validazione automatica
+- Libreria moduli personalizzati utente
+
+### Fase 3: Agente LLM Avanzato (6-8 settimane)
+- Context-aware conversation management
+- Suggerimenti proattivi composizione template
+- Voice input e interazioni avanzate
+
+## 🛠️ Sviluppo
+
+### Testing
+```bash
+# Test PDF generation
+python test_pdf_layout.py
+
+# Test template unificato  
+python test_template_unificato.py
+
+# Test confronto layout
+python test_confronto_layout.py
+```
+
+### Database Migrations
+```bash
+# Crea nuova migrazione
+alembic revision --autogenerate -m "descrizione"
+
+# Applica migrazioni
+alembic upgrade head
+```
+
+## 📖 Per Saperne di Più
+
+- Leggi [`context.md`](context.md) per il contesto completo del progetto
+- Consulta [`LLM_INTEGRATION_DESIGN.md`](LLM_INTEGRATION_DESIGN.md) per i dettagli sull'evoluzione LLM
+- Vedi [`MIGRAZIONE_POSTGRESQL.md`](MIGRAZIONE_POSTGRESQL.md) per dettagli tecnici database
+
+---
+
+**Nota**: Questo è un progetto in evoluzione attiva. Consulta regolarmente i documenti di contesto per gli aggiornamenti più recenti. 

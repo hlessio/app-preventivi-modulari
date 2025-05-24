@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 import uuid
@@ -19,6 +19,9 @@ class User(Base):
     # Relazioni
     azienda = relationship("Azienda", back_populates="proprietario", uselist=False)
     preventivi = relationship("Preventivo", back_populates="utente")
+    # Nuove relazioni
+    document_templates = relationship("DocumentTemplate", back_populates="user")
+    user_preferences = relationship("UserPreferences", back_populates="user", uselist=False)
 
 class Azienda(Base):
     __tablename__ = "aziende"
@@ -60,6 +63,9 @@ class Preventivo(Base):
     oggetto_preventivo = Column(String(500), nullable=False)
     stato_preventivo = Column(String(50), default="bozza")  # bozza, inviato, accettato, rifiutato, scaduto
     
+    # Riferimento al template utilizzato (opzionale per backward compatibility)
+    template_id = Column(UUID(as_uuid=True), ForeignKey("document_templates.id"), nullable=True)
+    
     # Usa JSONB per performance e capacità di query avanzate su PostgreSQL
     dati_preventivo = Column(JSONB, nullable=False)
     
@@ -68,4 +74,64 @@ class Preventivo(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relazioni
-    utente = relationship("User", back_populates="preventivi") 
+    utente = relationship("User", back_populates="preventivi")
+    template = relationship("DocumentTemplate", back_populates="documents")
+
+class DocumentTemplate(Base):
+    __tablename__ = "document_templates"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    
+    # Informazioni template
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    document_type = Column(String(100), nullable=False, default="preventivo")  # preventivo, fattura, contratto, etc.
+    
+    # Configurazione composizione moduli
+    module_composition = Column(JSONB, nullable=False)
+    
+    # Configurazione formato
+    page_format = Column(String(50), default="A4")  # A4, US_LETTER, A3, etc.
+    page_orientation = Column(String(20), default="portrait")  # portrait, landscape
+    margins = Column(JSONB, nullable=True)  # {top: 1.2, right: 0.8, bottom: 1.2, left: 0.8} in cm
+    
+    # CSS/Styling personalizzato (futuro)
+    custom_styles = Column(Text, nullable=True)
+    
+    # Metadati
+    is_default = Column(Boolean, default=False)
+    is_public = Column(Boolean, default=False)  # Per template condivisibili
+    version = Column(Integer, default=1)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relazioni
+    user = relationship("User", back_populates="document_templates")
+    documents = relationship("Preventivo", back_populates="template")
+
+class UserPreferences(Base):
+    __tablename__ = "user_preferences"
+    
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
+    
+    # Preferenze UI
+    default_page_format = Column(String(50), default="A4")
+    default_orientation = Column(String(20), default="portrait")
+    preferred_language = Column(String(10), default="it")
+    
+    # Preferenze documento
+    default_document_template_id = Column(UUID(as_uuid=True), ForeignKey("document_templates.id"), nullable=True)
+    auto_save_interval = Column(Integer, default=30)  # secondi
+    
+    # Impostazioni privacy
+    allow_public_templates = Column(Boolean, default=False)
+    data_retention_days = Column(Integer, default=365)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relazioni
+    user = relationship("User", back_populates="user_preferences")
+    default_template = relationship("DocumentTemplate", foreign_keys=[default_document_template_id]) 

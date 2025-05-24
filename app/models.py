@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, HttpUrl
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, Dict, Any
 from uuid import UUID
 import datetime # Import datetime
 
@@ -75,6 +75,7 @@ class MetadatiPreventivo(BaseModel):
     data_scadenza: Optional[datetime.date] = None # Changed to datetime.date
     oggetto_preventivo: str
     stato_preventivo: Literal["bozza", "inviato", "accettato", "rifiutato", "scaduto"] = "bozza"
+    template_id: Optional[str] = None  # ID del template utilizzato
 
 class PreventivoMasterModel(BaseModel):
     metadati_preventivo: MetadatiPreventivo
@@ -83,4 +84,93 @@ class PreventivoMasterModel(BaseModel):
     corpo_preventivo: TabellaPreventivo
     condizioni_contrattuali: Optional[CondizioniGenerali] = None
     dettagli_totali: SezioneTotali
-    elementi_footer: Optional[FooterPreventivo] = None 
+    elementi_footer: Optional[FooterPreventivo] = None
+
+# ============================================
+# TEMPLATE DOCUMENTI E PREFERENZE UTENTE
+# ============================================
+
+class ModuleConfig(BaseModel):
+    module_name: str = Field(..., description="Nome del modulo (es. 'intestazione_azienda')")
+    order: int = Field(..., description="Ordine di visualizzazione del modulo")
+    enabled: bool = Field(True, description="Se il modulo è abilitato")
+    custom_config: Dict[str, Any] = Field(default_factory=dict, description="Configurazioni personalizzate del modulo")
+
+class ModuleComposition(BaseModel):
+    modules: List[ModuleConfig] = Field(..., description="Lista ordinata dei moduli")
+
+class DocumentTemplateCreate(BaseModel):
+    name: str = Field(..., max_length=255, description="Nome del template")
+    description: Optional[str] = Field(None, description="Descrizione del template")
+    document_type: str = Field("preventivo", max_length=100, description="Tipo di documento")
+    module_composition: ModuleComposition = Field(..., description="Configurazione composizione moduli")
+    page_format: str = Field("A4", max_length=50, description="Formato pagina")
+    page_orientation: str = Field("portrait", max_length=20, description="Orientamento pagina")
+    margins: Optional[Dict[str, float]] = Field(None, description="Margini in cm")
+    custom_styles: Optional[str] = Field(None, description="CSS personalizzato")
+    is_default: bool = Field(False, description="Template di default")
+    is_public: bool = Field(False, description="Template pubblico")
+
+class DocumentTemplateUpdate(BaseModel):
+    name: Optional[str] = Field(None, max_length=255)
+    description: Optional[str] = Field(None)
+    module_composition: Optional[ModuleComposition] = Field(None)
+    page_format: Optional[str] = Field(None, max_length=50)
+    page_orientation: Optional[str] = Field(None, max_length=20)
+    margins: Optional[Dict[str, float]] = Field(None)
+    custom_styles: Optional[str] = Field(None)
+    is_default: Optional[bool] = Field(None)
+    is_public: Optional[bool] = Field(None)
+
+class DocumentTemplateResponse(BaseModel):
+    id: str
+    user_id: str
+    name: str
+    description: Optional[str]
+    document_type: str
+    module_composition: ModuleComposition
+    page_format: str
+    page_orientation: str
+    margins: Optional[Dict[str, float]]
+    custom_styles: Optional[str]
+    is_default: bool
+    is_public: bool
+    version: int
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
+
+    class Config:
+        from_attributes = True
+
+class UserPreferencesCreate(BaseModel):
+    default_page_format: str = Field("A4", max_length=50)
+    default_orientation: str = Field("portrait", max_length=20)
+    preferred_language: str = Field("it", max_length=10)
+    default_document_template_id: Optional[str] = Field(None)
+    auto_save_interval: int = Field(30, description="Intervallo auto-salvataggio in secondi")
+    allow_public_templates: bool = Field(False)
+    data_retention_days: int = Field(365)
+
+class UserPreferencesUpdate(BaseModel):
+    default_page_format: Optional[str] = Field(None, max_length=50)
+    default_orientation: Optional[str] = Field(None, max_length=20)
+    preferred_language: Optional[str] = Field(None, max_length=10)
+    default_document_template_id: Optional[str] = Field(None)
+    auto_save_interval: Optional[int] = Field(None)
+    allow_public_templates: Optional[bool] = Field(None)
+    data_retention_days: Optional[int] = Field(None)
+
+class UserPreferencesResponse(BaseModel):
+    user_id: str
+    default_page_format: str
+    default_orientation: str
+    preferred_language: str
+    default_document_template_id: Optional[str]
+    auto_save_interval: int
+    allow_public_templates: bool
+    data_retention_days: int
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
+
+    class Config:
+        from_attributes = True 

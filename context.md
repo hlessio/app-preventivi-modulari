@@ -31,9 +31,9 @@ Sviluppare un'applicazione web per la generazione di documenti (inizialmente pre
 
 ---
 **STATO ATTUALE DELLO SVILUPPO (Aggiornare regolarmente):**
-*   **Data Ultimo Aggiornamento:** 2024-12-17 (Template Unificato Completato)
-*   **Fase Corrente:** Fase 2 - Produzione
-*   **Step Attuale:** ✅ **Template Unificato PDF/Web Completato** + 🔄 **Migrazione PostgreSQL in corso**
+*   **Data Ultimo Aggiornamento:** 2024-12-17 (LLM Integration Design Completato)
+*   **Fase Corrente:** Fase 2a - Template Documenti Personalizzabili - **COMPLETATA**
+*   **Step Attuale:** ✅ **Template Documenti Personalizzabili COMPLETATO** (include fix persistenza template_id e export PDF con template personalizzati)
     *   ✅ **Backend core per preventivi pienamente funzionante** (dalla Fase 1)
     *   ✅ Modelli Pydantic completi (`app/models.py`) integrati e funzionanti (dalla Fase 1)
     *   ✅ Logica di calcolo totali/subtotali implementata (`app/services/preventivo_calculator.py`) (dalla Fase 1)
@@ -73,7 +73,7 @@ Sviluppare un'applicazione web per la generazione di documenti (inizialmente pre
         *   ✅ **WeasyPrint completamente configurato**: Dipendenze sistema installate, variabili d'ambiente configurate
         *   ✅ **Script di avvio `start_server.sh`**: Automatizza configurazione WeasyPrint e avvio server
         *   ✅ **Test endpoint funzionanti**: PDF generati correttamente con template unificato
-    *   🔄 **Migrazione a PostgreSQL (in corso)**
+    *   ✅ **Migrazione a PostgreSQL COMPLETATA**
         *   ✅ **Configurazione Ambiente**: File `.env` configurato con DATABASE_URL PostgreSQL
         *   ✅ **Database Layer**: `app/database.py` aggiornato per PostgreSQL con fallback SQLite e avvertimenti
         *   ✅ **Modelli Dati**: `app/db_models.py` aggiornato con tipi PostgreSQL nativi (UUID, JSONB, lunghezze stringhe)
@@ -81,28 +81,51 @@ Sviluppare un'applicazione web per la generazione di documenti (inizialmente pre
         *   ✅ **Migrations Setup**: Alembic inizializzato e configurato (`alembic.ini`, `alembic/env.py`)
         *   ✅ **Configurazione Test**: Verificato che modelli PostgreSQL non siano compatibili con SQLite (comportamento atteso)
         *   ✅ **Documentazione**: Creata guida completa `MIGRAZIONE_POSTGRESQL.md` con status tracking
-        *   ⏳ **In Attesa**: Istanza PostgreSQL in esecuzione (Docker non installato, richiede setup manuale/cloud)
-        *   ⏳ **Prossimi Step**: Prima migrazione Alembic, test con database PostgreSQL reale
+        *   ✅ **Database Operativo**: Istanza PostgreSQL configurata e funzionante
+        *   ✅ **Prima Migrazione**: Schema database inizializzato correttamente con Alembic
+    *   ✅ **NUOVO: Design Integrazione LLM COMPLETATO**
+        *   ✅ **Documento Operativo**: Creato `LLM_INTEGRATION_DESIGN.md` completo e dettagliato
+        *   ✅ **Analisi Architetturale**: Mappatura completa sistema esistente e gap per LLM
+        *   ✅ **Componenti Core Definiti**: 
+            - Sistema Template Documenti Personalizzabili (drag & drop, formati multipli)
+            - Creazione Moduli Personalizzati tramite LLM (generazione Jinja2 + JSON Schema)
+            - Agente LLM Contestuale (intent classification, context management)
+        *   ✅ **Modello Dati Esteso**: Progettazione nuove tabelle (`document_templates`, `custom_modules`, `user_preferences`, `llm_conversations`)
+        *   ✅ **Strategie Prompting**: Template prompt dettagliati per ogni caso d'uso LLM
+        *   ✅ **Flussi UI/UX**: Definizione completa interfacce utente e user journey
+        *   ✅ **Roadmap Implementazione**: Piano di sviluppo graduale (Fasi 2a, 2b, 2c, 3) con timeline dettagliato
+        *   ✅ **Risk Assessment**: Identificazione rischi tecnici, UX e business con relative mitigazioni
+        *   ✅ **Architettura LLM-Ready**: Conferma che sistema attuale si presta perfettamente all'evoluzione LLM
 *   **Repository e Documentazione**:\
         *   ✅ Versioning Git inizializzato e configurato
         *   ✅ Documentazione completa migrazione PostgreSQL
-*   **Prossimi Passi Immediati - Fase 2: Produzione:**
+        *   ✅ **Documentazione integrazione LLM completa e operativa**
+*   **Prossimi Passi Immediati - Fase 2a: Template Documenti Personalizzabili (4-6 settimane):**
     1.  ✅ **Export PDF**: Integrazione WeasyPrint per generazione PDF - **COMPLETATO**
-    2.  ✅ **NUOVO: Template Unificato PDF/Web** - **COMPLETATO**
-        *   ✅ Risolto dual template system 
-        *   ✅ Layout identico tra web e PDF garantito
-        *   ✅ Ottimizzazione A4 perfetta
-        *   ✅ Sistema di testing completo
-    3.  🔄 **Database Produzione**: Migrazione da SQLite a PostgreSQL - **IN CORSO (80% completato)**
-        *   ✅ Configurazione codebase e Alembic
-        *   ⏳ Setup istanza PostgreSQL e prima migrazione
-    4.  **Sistema Autenticazione**: Login/registrazione utenti reali (sostituire test-user)
-    5.  **Deploy Cloud**: Setup Heroku/Railway/DigitalOcean per hosting
-    6.  **Testing**: Suite test automatizzati (pytest)
-    7.  **CI/CD**: Pipeline GitHub Actions per deploy automatico
+    2.  ✅ **Template Unificato PDF/Web** - **COMPLETATO**
+    3.  ✅ **Database Produzione**: Migrazione da SQLite a PostgreSQL - **COMPLETATO**
+    4.  ✅ **Design Integrazione LLM**: Documento operativo completo - **COMPLETATO**
+    5.  ✅ **Template Documenti Personalizzabili** - **FASE 2a COMPLETATA**
+        *   **Risolti problemi di persistenza template_id e export PDF con template custom.**
+        *   ✅ **Week 1-2: Database & Backend** (4-6 settimane totali) - **COMPLETATO**
+            - [X] Implementa tabelle `document_templates`, `user_preferences`
+            - [X] Crea `DocumentTemplateService`
+            - [X] Estendi rendering engine per template dinamici
+            - [X] API endpoints per gestione template
+        *   ✅ **Week 3-4: Frontend Template Composer** - **COMPLETATO**
+            - [X] UI Template Composer con drag & drop
+            - [X] Preview live documents
+            - [X] Gestione formato pagina e orientamento
+            - [X] Salvataggio e caricamento template
+        *   ✅ **Week 5-6: Testing & Refinement** - **COMPLETATO**
+            - [X] Test con vari tipi documento
+            - [X] Ottimizzazione performance rendering
+            - [X] UI/UX improvements
+    6.  **Fasi Successive**: Integrazione LLM Base (Fase 2b), Module Creation LLM (Fase 2c), Agente LLM Avanzato (Fase 3)
 *   **Bloccanti / Domande Aperte:**
-    *   **PostgreSQL Setup**: Docker non installato, necessario setup PostgreSQL manuale o servizio cloud
-    *   **Configurazione pronta**: Tutto il codice è pronto per PostgreSQL, serve solo istanza DB attiva
+    *   **Nessun bloccante critico**: Tutte le fondamenta sono pronte per l'evoluzione LLM
+    *   **Decisioni Architetturali**: Già definite nel documento di design LLM
+    *   **Setup LLM**: Da implementare nelle prossime fasi (API keys, modelli, etc.)
 
 ---
 **Istruzioni per l'Agent AI (Cursor):**

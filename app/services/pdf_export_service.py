@@ -3,6 +3,7 @@ import logging
 from typing import Optional, Union
 from jinja2 import Environment, FileSystemLoader
 import tempfile
+from sqlalchemy.orm import Session
 
 # Setup logger
 logger = logging.getLogger(__name__)
@@ -34,16 +35,18 @@ class PDFExportService:
     Se WeasyPrint non è disponibile, fornisce messaggi di errore utili.
     """
     
-    def __init__(self, templates_dir: Path):
+    def __init__(self, templates_dir: Path, db: Optional[Session] = None):
         """
         Inizializza il servizio con la directory dei template
         
         Args:
             templates_dir: Path alla directory contenente i template Jinja2
+            db: SQLAlchemy Session opzionale, necessaria per usare DocumentTemplateService
         """
         self.templates_dir = templates_dir
         self.env = Environment(loader=FileSystemLoader(str(templates_dir)))
         self.is_available = WEASYPRINT_AVAILABLE
+        self.db = db
         
         if not self.is_available:
             logger.warning("🔧 PDFExportService inizializzato senza WeasyPrint - funzionalità PDF disabilitate")
@@ -170,4 +173,83 @@ class PDFExportService:
             "weasyprint_installed": WEASYPRINT_AVAILABLE,
             "message": "✅ Export PDF disponibile" if self.is_available else 
                       "❌ Export PDF non disponibile - WeasyPrint non installato correttamente"
-        } 
+        }
+    
+    def genera_pdf_preventivo_con_template(self, preventivo_data: PreventivoMasterModel, template) -> bytes:
+        """
+        Genera un PDF del preventivo usando un template specifico.
+        
+        Args:
+            preventivo_data: Dati del preventivo validati
+            template: Template oggetto (dalla DocumentTemplateService)
+            
+        Returns:
+            bytes: Contenuto del PDF
+            
+        Raises:
+            RuntimeError: Se WeasyPrint non è disponibile
+            Exception: Altri errori di generazione PDF
+        """
+        if not self.is_available:
+            raise RuntimeError(
+                "❌ Export PDF non disponibile. "
+                "WeasyPrint non è installato correttamente. "
+                "Consulta la documentazione per l'installazione delle dipendenze di sistema."
+            )
+        
+        try:
+            # Assicuriamoci che i totali siano calcolati
+            calcola_totali_preventivo(preventivo_data)
+            
+            # Renderizza l'HTML usando il template specifico
+            html_content = self._renderizza_html_pdf_con_template(preventivo_data, template)
+            
+            # Genera il PDF usando SOLO l'HTML (il CSS è incorporato nel template)
+            pdf_bytes = self._genera_pdf_da_html(html_content)
+            
+            logger.info(f"✅ PDF generato con successo per preventivo {preventivo_data.metadati_preventivo.numero_preventivo} con template {template.name}")
+            return pdf_bytes
+            
+        except Exception as e:
+            logger.error(f"❌ Errore nella generazione PDF con template: {e}")
+            raise Exception(f"Errore nella generazione del PDF con template: {str(e)}")
+    
+    def _renderizza_html_pdf_con_template(self, preventivo_data: PreventivoMasterModel, template) -> str:
+        """
+        Renderizza l'HTML del preventivo usando un template specifico e il DocumentTemplateService
+        
+        Args:
+            preventivo_data: Dati del preventivo
+            template: Template da utilizzare
+            
+        Returns:
+            str: HTML renderizzato
+        """
+        # Importo DocumentTemplateService qui per evitare circular imports
+        from .document_template_service import DocumentTemplateService
+        
+        if not self.db:
+            raise RuntimeError("Sessione Database non fornita a PDFExportService, necessaria per comporre il template.")
+
+        template_service = DocumentTemplateService(self.db)
+        
+        # Converti il modello Pydantic in dizionario
+        preventivo_dict = preventivo_data.model_dump()
+        
+        # Usa il DocumentTemplateService per comporre i dati correttamente
+        composed_data = template_service.compose_document_from_template(template, preventivo_dict)
+        
+        # Usa il template unificato per il rendering
+        template_name = "preventivo/preventivo_unificato.html"
+        
+        try:
+            jinja_template = self.env.get_template(template_name)
+        except:
+            # Fallback ai template esistenti se l'unificato non esiste
+            try:
+                jinja_template = self.env.get_template("preventivo/preventivo_pdf.html")
+            except:
+                jinja_template = self.env.get_template("preventivo/preventivo_documento.html")
+        
+        # Renderizza l'HTML con i dati composti
+        return jinja_template.render(**composed_data) 

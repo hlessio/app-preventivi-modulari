@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Template Document Composer</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js" defer></script>
+    <style>
+        /* Stili aggiuntivi specifici per il composer se necessario */
+        .module-card {
+            border: 1px solid #e2e8f0;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            border-radius: 0.375rem;
+            background-color: white;
+            cursor: grab;
+        }
+        .composer-area {
+            border: 2px dashed #cbd5e0;
+            min-height: 300px;
+            padding: 1rem;
+            background-color: #f7fafc;
+        }
+        .config-panel input, .config-panel select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #cbd5e0;
+            border-radius: 0.25rem;
+            margin-top: 0.25rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-8" x-data="templateComposerData()" x-init="init()">
+
+    <div class="max-w-7xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">Template Document Composer</h1>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Colonna Sinistra: Moduli Disponibili e Configurazione Template -->
+            <div class="md:col-span-1 space-y-6">
+                <!-- Pannello Moduli Disponibili -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4">Moduli Disponibili</h2>
+                    <div id="available-modules">
+                        <!-- Esempio di modulo, verranno caricati dinamicamente -->
+                        <div class="module-card" draggable="true" x-text="'Intestazione Azienda'" @dragstart="setDraggedModule('intestazione_azienda')"></div>
+                        <div class="module-card" draggable="true" x-text="'Metadati Preventivo'" @dragstart="setDraggedModule('metadati_preventivo')"></div>
+                        <div class="module-card" draggable="true" x-text="'Intestazione Cliente'" @dragstart="setDraggedModule('intestazione_cliente')"></div>
+                        <div class="module-card" draggable="true" x-text="'Tabella Preventivo'" @dragstart="setDraggedModule('tabella_preventivo')"></div>
+                        <div class="module-card" draggable="true" x-text="'Sezione Totali'" @dragstart="setDraggedModule('sezione_totali')"></div>
+                        <div class="module-card" draggable="true" x-text="'Condizioni Generali'" @dragstart="setDraggedModule('condizioni_generali')"></div>
+                        <div class="module-card" draggable="true" x-text="'Footer Preventivo'" @dragstart="setDraggedModule('footer_preventivo')"></div>
+                    </div>
+                </div>
+
+                <!-- Pannello Configurazione Template -->
+                <div class="bg-white p-6 rounded-lg shadow config-panel">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4">Configurazione Template</h2>
+                    <div>
+                        <label for="template-name" class="block text-sm font-medium text-gray-700">Nome Template</label>
+                        <input type="text" id="template-name" x-model="template.name">
+                    </div>
+                    <div class="mt-4">
+                        <label for="template-description" class="block text-sm font-medium text-gray-700">Descrizione</label>
+                        <textarea id="template-description" rows="3" class="w-full p-2 border border-gray-300 rounded mt-1" x-model="template.description"></textarea>
+                    </div>
+                    <div class="mt-4">
+                        <label for="page-format" class="block text-sm font-medium text-gray-700">Formato Pagina</label>
+                        <select id="page-format" x-model="template.page_format">
+                            <option value="A4">A4</option>
+                            <option value="US_LETTER">US Letter</option>
+                        </select>
+                    </div>
+                    <div class="mt-4">
+                        <label for="page-orientation" class="block text-sm font-medium text-gray-700">Orientamento</label>
+                        <select id="page-orientation" x-model="template.page_orientation">
+                            <option value="portrait">Verticale (Portrait)</option>
+                            <option value="landscape">Orizzontale (Landscape)</option>
+                        </select>
+                    </div>
+                    <div class="mt-4">
+                        <h3 class="text-md font-medium text-gray-700 mb-1">Margini (cm)</h3>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label for="margin-top" class="text-xs">Alto</label>
+                                <input type="number" step="0.1" id="margin-top" x-model.number="template.margins.top">
+                            </div>
+                            <div>
+                                <label for="margin-bottom" class="text-xs">Basso</label>
+                                <input type="number" step="0.1" id="margin-bottom" x-model.number="template.margins.bottom">
+                            </div>
+                            <div>
+                                <label for="margin-left" class="text-xs">Sinistra</label>
+                                <input type="number" step="0.1" id="margin-left" x-model.number="template.margins.left">
+                            </div>
+                            <div>
+                                <label for="margin-right" class="text-xs">Destra</label>
+                                <input type="number" step="0.1" id="margin-right" x-model.number="template.margins.right">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Colonna Destra: Area Composizione e Anteprima -->
+            <div class="md:col-span-2 space-y-6">
+                <!-- Area Composizione Template -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4">Composizione Moduli</h2>
+                    <div class="composer-area" 
+                         @dragover.prevent 
+                         @drop="handleDrop($event)">
+                        <template x-for="(module, index) in template.modules" :key="index">
+                            <div class="module-card flex justify-between items-center">
+                                <span x-text="module.displayName || module.module_name"></span>
+                                <div>
+                                    <button @click="toggleModule(index)" class="text-sm px-2 py-1 rounded"
+                                            :class="module.enabled ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
+                                            x-text="module.enabled ? 'Abilitato' : 'Disabilitato'"></button>
+                                    <button @click="removeModule(index)" class="text-sm text-red-500 hover:text-red-700 ml-2">Rimuovi</button>
+                                </div>
+                            </div>
+                        </template>
+                        <p x-show="template.modules.length === 0" class="text-gray-400 text-center py-4">Trascina i moduli qui per comporre il template.</p>
+                    </div>
+                </div>
+
+                <!-- Anteprima Documento -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4">Anteprima</h2>
+                    <div id="preview-area" class="border border-gray-300 bg-gray-50 p-4 min-h-[400px]">
+                        <!-- L'anteprima verrà caricata qui via HTMX o JS -->
+                        <p class="text-gray-400 text-center">L'anteprima del documento apparirà qui.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pulsanti Azione -->
+        <div class="mt-8 flex justify-end space-x-3">
+            <button @click="loadTemplatesList()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">Carica Template</button>
+            <button @click="saveTemplate()" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">Salva Template</button>
+            <button @click="previewTemplate()" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700">Anteprima Documento</button>
+        </div>
+    </div>
+
+    <script>
+        // Mappatura nomi moduli per visualizzazione (migliorabile)
+        const MODULE_DISPLAY_NAMES = {
+            "intestazione_azienda": "Intestazione Azienda",
+            "metadati_preventivo": "Metadati Preventivo",
+            "intestazione_cliente": "Intestazione Cliente",
+            "tabella_preventivo": "Tabella Preventivo",
+            "sezione_totali": "Sezione Totali",
+            "condizioni_generali": "Condizioni Generali",
+            "footer_preventivo": "Footer Preventivo"
+        };
+
+        function templateComposerData() {
+            return {
+                template: {
+                    id: null,
+                    name: 'Nuovo Template',
+                    description: '',
+                    document_type: 'preventivo',
+                    modules: [], // Array di oggetti { module_name: string, order: int, enabled: bool, custom_config: {} }
+                    page_format: 'A4',
+                    page_orientation: 'portrait',
+                    margins: { top: 1.2, bottom: 1.2, left: 0.8, right: 0.8 },
+                    custom_styles: '' // Futuro
+                },
+                draggedModule: null, // Nome del modulo trascinato
+                availableModules: Object.keys(MODULE_DISPLAY_NAMES).map(key => ({ name: key, displayName: MODULE_DISPLAY_NAMES[key] })),
+
+                init() {
+                    // Rendi disponibile l'istanza globalmente per la modale
+                    window.templateComposer = this;
+                },
+
+                setDraggedModule(moduleName) {
+                    this.draggedModule = moduleName;
+                },
+
+                handleDrop(event) {
+                    if (this.draggedModule) {
+                        const newModule = {
+                            module_name: this.draggedModule,
+                            displayName: MODULE_DISPLAY_NAMES[this.draggedModule] || this.draggedModule,
+                            order: this.template.modules.length + 1,
+                            enabled: true,
+                            custom_config: {}
+                        };
+                        this.template.modules.push(newModule);
+                        this.draggedModule = null; // Resetta
+                        this.updateOrder();
+                    }
+                },
+
+                removeModule(index) {
+                    this.template.modules.splice(index, 1);
+                    this.updateOrder();
+                },
+
+                toggleModule(index) {
+                    this.template.modules[index].enabled = !this.template.modules[index].enabled;
+                },
+                
+                updateOrder() {
+                    this.template.modules.forEach((module, index) => {
+                        module.order = index + 1;
+                    });
+                },
+
+                async saveTemplate() {
+                    // Prepara i dati per l'API
+                    const payload = {
+                        name: this.template.name,
+                        description: this.template.description,
+                        document_type: this.template.document_type,
+                        module_composition: { modules: this.template.modules.map(m => ({ module_name: m.module_name, order: m.order, enabled: m.enabled, custom_config: m.custom_config })) },
+                        page_format: this.template.page_format,
+                        page_orientation: this.template.page_orientation,
+                        margins: this.template.margins,
+                        custom_styles: this.template.custom_styles,
+                        is_default: false, // Gestire is_default e is_public in UI più avanzata
+                        is_public: false
+                    };
+
+                    let url = '/templates';
+                    let method = 'POST';
+
+                    if (this.template.id) {
+                        url = `/templates/${this.template.id}`;
+                        method = 'PUT';
+                    }
+
+                    try {
+                        const response = await fetch(url + '?user_id=da2cb935-e023-40dd-9703-d918f1066b24', { // User ID hardcoded per ora
+                            method: method,
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(payload),
+                        });
+                        const result = await response.json();
+                        if (response.ok) {
+                            alert('Template salvato con successo! ID: ' + (result.template_id || this.template.id));
+                            if (result.template_id && method === 'POST') {
+                                this.template.id = result.template_id;
+                            }
+                        } else {
+                            alert('Errore salvataggio: ' + (result.detail || 'Errore sconosciuto'));
+                        }
+                    } catch (error) {
+                        console.error('Errore fetch:', error);
+                        alert('Errore di connessione durante il salvataggio.');
+                    }
+                },
+
+                async loadTemplatesList() {
+                    try {
+                        // Fetch dei template dell'utente
+                        const response = await fetch('/templates?user_id=da2cb935-e023-40dd-9703-d918f1066b24&document_type=preventivo');
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.showTemplateSelectionModal(data.templates);
+                        } else {
+                            alert('Errore nel caricamento dei template: ' + response.status);
+                        }
+                    } catch (error) {
+                        console.error('Errore fetch template:', error);
+                        alert('Errore di connessione nel caricamento template.');
+                    }
+                },
+
+                showTemplateSelectionModal(templates) {
+                    // Crea e mostra la modale di selezione template
+                    const modalHtml = `
+                        <div id="template-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+                            <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+                                <div class="mt-3">
+                                    <h3 class="text-lg font-medium text-gray-900 mb-4">Seleziona Template</h3>
+                                    <div class="max-h-96 overflow-y-auto">
+                                        ${templates.length === 0 ? 
+                                            '<p class="text-gray-500 text-center py-4">Nessun template trovato</p>' :
+                                            templates.map(template => `
+                                                <div class="border border-gray-200 rounded-lg p-4 mb-3 hover:bg-gray-50 template-item" 
+                                                     data-template-id="${template.id}">
+                                                    <div class="flex justify-between items-start">
+                                                        <div class="flex-1 cursor-pointer" onclick="window.templateComposer.loadTemplate('${template.id}'); window.templateComposer.closeTemplateModal();">
+                                                            <h4 class="font-medium text-gray-900">${template.name}</h4>
+                                                            ${template.description ? `<p class="text-sm text-gray-600 mt-1">${template.description}</p>` : ''}
+                                                            <div class="text-xs text-gray-500 mt-2">
+                                                                <span>Formato: ${template.page_format} ${template.page_orientation}</span>
+                                                                ${template.is_default ? '<span class="ml-2 bg-blue-100 text-blue-800 px-2 py-1 rounded-full">Default</span>' : ''}
+                                                            </div>
+                                                        </div>
+                                                        <div class="flex flex-col items-end space-y-2">
+                                                            <div class="text-xs text-gray-400">
+                                                                ${new Date(template.created_at).toLocaleDateString('it-IT')}
+                                                            </div>
+                                                            <div class="flex space-x-2">
+                                                                ${!template.is_default ? `
+                                                                    <button onclick="event.stopPropagation(); window.templateComposer.setAsDefault('${template.id}', '${template.name}')" 
+                                                                            class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200">
+                                                                        Imposta Default
+                                                                    </button>
+                                                                ` : ''}
+                                                                <button onclick="event.stopPropagation(); window.templateComposer.deleteTemplate('${template.id}', '${template.name}')" 
+                                                                        class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200">
+                                                                    Elimina
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            `).join('')
+                                        }
+                                    </div>
+                                    <div class="flex justify-between mt-6">
+                                        <button onclick="window.templateComposer.createNewTemplate()" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
+                                            Nuovo Template
+                                        </button>
+                                        <button onclick="window.templateComposer.closeTemplateModal()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                            Annulla
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Aggiungi la modale al DOM
+                    document.body.insertAdjacentHTML('beforeend', modalHtml);
+                },
+
+                async loadTemplate(templateId) {
+                    try {
+                        // Carica il template specifico
+                        const response = await fetch(`/templates/${templateId}?user_id=da2cb935-e023-40dd-9703-d918f1066b24`);
+                        
+                        if (response.ok) {
+                            const templateData = await response.json();
+                            
+                            // Popola l'interfaccia con i dati del template
+                            this.template.id = templateData.id;
+                            this.template.name = templateData.name;
+                            this.template.description = templateData.description || '';
+                            this.template.document_type = templateData.document_type;
+                            this.template.page_format = templateData.page_format;
+                            this.template.page_orientation = templateData.page_orientation;
+                            this.template.margins = templateData.margins || { top: 1.2, bottom: 1.2, left: 0.8, right: 0.8 };
+                            this.template.custom_styles = templateData.custom_styles || '';
+                            
+                            // Carica i moduli
+                            this.template.modules = templateData.module_composition.modules.map(module => ({
+                                module_name: module.module_name,
+                                displayName: MODULE_DISPLAY_NAMES[module.module_name] || module.module_name,
+                                order: module.order,
+                                enabled: module.enabled,
+                                custom_config: module.custom_config || {}
+                            }));
+                            
+                            // Aggiorna anteprima automaticamente
+                            setTimeout(() => this.previewTemplate(), 100);
+                            
+                            alert(`Template "${templateData.name}" caricato con successo!`);
+                        } else {
+                            alert('Errore nel caricamento del template: ' + response.status);
+                        }
+                    } catch (error) {
+                        console.error('Errore caricamento template:', error);
+                        alert('Errore di connessione nel caricamento del template.');
+                    }
+                },
+
+                closeTemplateModal() {
+                    const modal = document.getElementById('template-modal');
+                    if (modal) {
+                        modal.remove();
+                    }
+                },
+
+                async previewTemplate() {
+                    try {
+                        // Prepara dati di esempio per il preventivo
+                        const samplePreventivoData = {
+                            "metadati_preventivo": {
+                                "id_preventivo": "12345678-1234-1234-1234-123456789012",
+                                "numero_preventivo": "PREV-2024-001",
+                                "data_emissione": "2024-12-17",
+                                "data_scadenza": "2025-01-16",
+                                "oggetto_preventivo": "Sviluppo Sistema Gestionale",
+                                "stato_preventivo": "bozza"
+                            },
+                            "azienda_emittente": {
+                                "nome_azienda": "TechSolutions S.r.l.",
+                                "partita_iva_azienda": "IT12345678901",
+                                "codice_fiscale_azienda": "12345678901",
+                                "indirizzo_azienda": {
+                                    "via": "Via Roma 123",
+                                    "cap": "20100",
+                                    "citta": "Milano",
+                                    "provincia": "MI",
+                                    "nazione": "Italia"
+                                },
+                                "email_azienda": "info@techsolutions.it",
+                                "telefono_azienda": "+39 02 1234567",
+                                "sito_web_azienda": "https://www.techsolutions.it"
+                            },
+                            "cliente_destinatario": {
+                                "nome_cliente": "Acme Corporation",
+                                "partita_iva": "IT09876543210",
+                                "codice_fiscale": "RSSMRA80A01H501Z",
+                                "indirizzo": {
+                                    "via": "Via Milano 456",
+                                    "cap": "00100",
+                                    "citta": "Roma",
+                                    "provincia": "RM",
+                                    "nazione": "Italia"
+                                },
+                                "email": "mario.rossi@acme.com",
+                                "telefono": "+39 06 9876543",
+                                "referente": "Mario Rossi - Responsabile IT"
+                            },
+                            "corpo_preventivo": {
+                                "righe": [
+                                    {
+                                        "numero_riga": 1,
+                                        "descrizione": "Analisi requisiti e progettazione sistema",
+                                        "unita_misura": "ore",
+                                        "quantita": 40.0,
+                                        "prezzo_unitario_netto": 85.0,
+                                        "percentuale_iva": 22.0,
+                                        "sconto_riga_percentuale": 0.0,
+                                        "note_riga": "Includere documentazione tecnica"
+                                    },
+                                    {
+                                        "numero_riga": 2,
+                                        "descrizione": "Sviluppo modulo gestione utenti",
+                                        "unita_misura": "ore",
+                                        "quantita": 60.0,
+                                        "prezzo_unitario_netto": 75.0,
+                                        "percentuale_iva": 22.0,
+                                        "sconto_riga_percentuale": 5.0,
+                                        "note_riga": "Con sistema di autenticazione avanzato"
+                                    },
+                                    {
+                                        "numero_riga": 3,
+                                        "descrizione": "Sviluppo modulo reporting",
+                                        "unita_misura": "ore",
+                                        "quantita": 35.0,
+                                        "prezzo_unitario_netto": 75.0,
+                                        "percentuale_iva": 22.0,
+                                        "sconto_riga_percentuale": 0.0,
+                                        "note_riga": "Dashboard interattiva con grafici"
+                                    },
+                                    {
+                                        "numero_riga": 4,
+                                        "descrizione": "Testing e deployment",
+                                        "unita_misura": "ore",
+                                        "quantita": 20.0,
+                                        "prezzo_unitario_netto": 65.0,
+                                        "percentuale_iva": 22.0,
+                                        "sconto_riga_percentuale": 0.0,
+                                        "note_riga": "Include formazione del personale"
+                                    }
+                                ],
+                                "note_tabella": "Tutte le attività includono testing e documentazione"
+                            },
+                            "condizioni_contrattuali": {
+                                "testo_condizioni": "Condizioni di pagamento: 30% all'ordine, 40% a metà lavori, 30% alla consegna. Modalità: Bonifico bancario. Tempi di consegna: 8 settimane dalla conferma d'ordine. Garanzia: 12 mesi su difetti di sviluppo. Validità offerta: 30 giorni. Prezzi IVA esclusa. Il codice sorgente sarà fornito al cliente a progetto completato. Include 3 mesi di supporto tecnico gratuito post-delivery."
+                            },
+                            "dettagli_totali": {
+                                "totale_imponibile_netto": 7875.0,
+                                "totale_iva": 1732.5,
+                                "totale_generale_lordo": 9607.5
+                            },
+                            "elementi_footer": {
+                                "dati_pagamento": "Bonifico bancario su IBAN: IT60 X054 2811 1010 0000 0123 456",
+                                "validita_preventivo": "30 giorni dalla data di emissione",
+                                "note_finali": "Grazie per aver scelto TechSolutions - Il vostro partner tecnologico di fiducia",
+                                "firma_azienda": "TechSolutions S.r.l. - Ing. Marco Bianchi, Amministratore Delegato"
+                            }
+                        };
+
+                        // Prepara la configurazione del template corrente
+                        const templateConfig = {
+                            name: this.template.name,
+                            description: this.template.description,
+                            document_type: this.template.document_type,
+                            module_composition: { 
+                                modules: this.template.modules.map(m => ({
+                                    module_name: m.module_name,
+                                    order: m.order,
+                                    enabled: m.enabled,
+                                    custom_config: m.custom_config || {}
+                                }))
+                            },
+                            page_format: this.template.page_format,
+                            page_orientation: this.template.page_orientation,
+                            margins: this.template.margins,
+                            custom_styles: this.template.custom_styles || ''
+                        };
+
+                        // Payload per l'endpoint di anteprima
+                        const payload = {
+                            preventivo_data: samplePreventivoData,
+                            template_config: templateConfig
+                        };
+
+                        // Invia la richiesta all'endpoint di anteprima
+                        const response = await fetch('/preventivo/preview', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(payload),
+                        });
+
+                        if (response.ok) {
+                            // Ricevi l'HTML e inseriscilo nell'area di anteprima
+                            const htmlContent = await response.text();
+                            document.getElementById('preview-area').innerHTML = htmlContent;
+                        } else {
+                            // Gestisci errore
+                            const errorText = await response.text();
+                            document.getElementById('preview-area').innerHTML = `
+                                <div class="p-4 bg-red-50 border border-red-200 rounded-md">
+                                    <h3 class="text-red-800 font-medium">Errore nell'anteprima</h3>
+                                    <p class="text-red-600 text-sm mt-1">${errorText}</p>
+                                </div>
+                            `;
+                        }
+                    } catch (error) {
+                        console.error('Errore generazione anteprima:', error);
+                        document.getElementById('preview-area').innerHTML = `
+                            <div class="p-4 bg-red-50 border border-red-200 rounded-md">
+                                <h3 class="text-red-800 font-medium">Errore di connessione</h3>
+                                <p class="text-red-600 text-sm mt-1">Impossibile generare l'anteprima: ${error.message}</p>
+                            </div>
+                        `;
+                    }
+                },
+
+                async deleteTemplate(templateId, templateName) {
+                    if (!confirm(`Sei sicuro di voler eliminare il template "${templateName}"?`)) {
+                        return;
+                    }
+                    
+                    try {
+                        const response = await fetch(`/templates/${templateId}?user_id=da2cb935-e023-40dd-9703-d918f1066b24`, {
+                            method: 'DELETE'
+                        });
+                        
+                        if (response.ok) {
+                            alert(`Template "${templateName}" eliminato con successo!`);
+                            // Ricarica la lista template
+                            this.closeTemplateModal();
+                            this.loadTemplatesList();
+                        } else {
+                            const error = await response.json();
+                            alert('Errore nell\'eliminazione: ' + (error.detail || 'Errore sconosciuto'));
+                        }
+                    } catch (error) {
+                        console.error('Errore eliminazione template:', error);
+                        alert('Errore di connessione nell\'eliminazione del template.');
+                    }
+                },
+
+                async setAsDefault(templateId, templateName) {
+                    if (!confirm(`Impostare "${templateName}" come template di default?`)) {
+                        return;
+                    }
+                    
+                    try {
+                        const response = await fetch(`/templates/${templateId}?user_id=da2cb935-e023-40dd-9703-d918f1066b24`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                is_default: true
+                            })
+                        });
+                        
+                        if (response.ok) {
+                            alert(`Template "${templateName}" impostato come default!`);
+                            // Ricarica la lista template per aggiornare i badge
+                            this.closeTemplateModal();
+                            this.loadTemplatesList();
+                        } else {
+                            const error = await response.json();
+                            alert('Errore nell\'impostazione default: ' + (error.detail || 'Errore sconosciuto'));
+                        }
+                    } catch (error) {
+                        console.error('Errore impostazione default:', error);
+                        alert('Errore di connessione nell\'impostazione del template default.');
+                    }
+                },
+
+                createNewTemplate() {
+                    // Reset del template corrente per crearne uno nuovo
+                    this.template = {
+                        id: null,
+                        name: 'Nuovo Template',
+                        description: '',
+                        document_type: 'preventivo',
+                        modules: [],
+                        page_format: 'A4',
+                        page_orientation: 'portrait',
+                        margins: { top: 1.2, bottom: 1.2, left: 0.8, right: 0.8 },
+                        custom_styles: ''
+                    };
+                    
+                    // Pulisci l'anteprima
+                    document.getElementById('preview-area').innerHTML = '<p class="text-gray-400 text-center">L\'anteprima del documento apparirà qui.</p>';
+                    
+                    this.closeTemplateModal();
+                    alert('Nuovo template creato. Configura i moduli e le impostazioni.');
+                }
+            };
+        }
+    </script>
+
+</body>
+</html> 

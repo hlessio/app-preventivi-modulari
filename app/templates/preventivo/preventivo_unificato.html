@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Preventivo {{ metadati_preventivo.numero_preventivo }} - {{ azienda_emittente.nome_azienda }}</title>
+    <title>Preventivo {{ document_data.metadati_preventivo.numero_preventivo }} - {{ document_data.azienda_emittente.nome_azienda }}</title>
     <style>
         /* ============================================
            STILI BASE - APPLICATI SIA A WEB CHE PDF
@@ -203,33 +203,30 @@
             padding: 6px 4px;
             font-size: 0.8em;
             vertical-align: top;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            hyphens: auto;
         }
         
-        /* Larghezze colonne ottimizzate per A4 */
-        .col-numero { width: 5%; text-align: center; }
-        .col-descrizione { width: 50%; }
-        .col-quantita { width: 7%; text-align: center; }
-        .col-unita { width: 8%; text-align: center; }
-        .col-prezzo { width: 15%; text-align: right; }
-        .col-totale { width: 15%; text-align: right; }
+        /* Dimensionamento colonne ottimizzato per A4 */
+        .col-numero { width: 6%; text-align: center; }
+        .col-descrizione { width: 40%; text-align: left; }
+        .col-quantita { width: 8%; text-align: center; }
+        .col-unita { width: 10%; text-align: center; }
+        .col-prezzo { width: 18%; text-align: right; }
+        .col-totale { width: 18%; text-align: right; }
         
         .descrizione-prodotto {
-            font-weight: bold;
-            margin-bottom: 3px;
+            font-weight: 500;
+            margin-bottom: 2px;
         }
         
         .note-riga {
-            font-size: 0.85em;
-            color: #666;
             font-style: italic;
-            line-height: 1.1;
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 2px;
         }
         
         /* ============================================
-           SEZIONE TOTALI
+           TOTALI
            ============================================ */
         
         .totali-container {
@@ -239,43 +236,49 @@
         }
         
         .totali-tabella {
-            width: 250px;
+            width: 300px;
             border-collapse: collapse;
         }
         
         .totali-tabella td {
+            padding: 8px 12px;
             border: 1px solid #ddd;
-            padding: 8px;
-            font-size: 0.9em;
+            font-size: 0.95em;
         }
         
         .totali-tabella .label {
-            font-weight: bold;
-            text-align: left;
             background-color: #f8f9fa;
+            font-weight: bold;
+            text-align: right;
+            width: 60%;
         }
         
         .totali-tabella .valore {
             text-align: right;
             font-weight: bold;
+            width: 40%;
         }
         
         .totale-finale {
             background-color: #2c3e50 !important;
             color: white !important;
-            font-size: 1.1em !important;
+        }
+        
+        .totale-finale .label, 
+        .totale-finale .valore {
+            background-color: #2c3e50 !important;
+            color: white !important;
         }
         
         /* ============================================
-           CONDIZIONI E NOTE
+           CONDIZIONI E FOOTER
            ============================================ */
         
         .condizioni-box {
             background-color: #f8f9fa;
-            border: 1px solid #ddd;
-            border-radius: 3px;
             padding: 15px;
-            margin: 20px 0;
+            border-radius: 5px;
+            border-left: 4px solid #2c3e50;
         }
         
         .condizioni-box h3 {
@@ -284,18 +287,13 @@
         }
         
         .condizioni-testo {
-            white-space: pre-wrap;
-            line-height: 1.4;
-            font-size: 0.9em;
+            line-height: 1.5;
+            color: #555;
         }
-        
-        /* ============================================
-           FOOTER
-           ============================================ */
         
         footer {
             margin-top: 30px;
-            padding-top: 15px;
+            padding-top: 20px;
             border-top: 1px solid #ddd;
             font-size: 0.9em;
         }
@@ -356,175 +354,220 @@
                 color-adjust: exact;
             }
         }
+
+        /* ============================================
+           ORIENTAMENTO E FORMATI DINAMICI
+           ============================================ */
+        
+        {% if template_config.page_orientation == 'landscape' %}
+        @media screen {
+            .container {
+                width: 29.7cm; /* A4 landscape width */
+            }
+        }
+        
+        @media print {
+            @page {
+                size: A4 landscape;
+                margin: {% if template_config.margins %}{{ template_config.margins.top or 1.2 }}cm {{ template_config.margins.right or 0.8 }}cm {{ template_config.margins.bottom or 1.2 }}cm {{ template_config.margins.left or 0.8 }}cm{% else %}1.2cm 0.8cm{% endif %};
+            }
+        }
+        {% else %}
+        @media print {
+            @page {
+                size: A4;
+                margin: {% if template_config.margins %}{{ template_config.margins.top or 1.2 }}cm {{ template_config.margins.right or 0.8 }}cm {{ template_config.margins.bottom or 1.2 }}cm {{ template_config.margins.left or 0.8 }}cm{% else %}1.2cm 0.8cm{% endif %};
+            }
+        }
+        {% endif %}
+        
+        {% if template_config.custom_styles %}
+        /* CSS PERSONALIZZATO DEL TEMPLATE */
+        {{ template_config.custom_styles|safe }}
+        {% endif %}
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- INTESTAZIONE AZIENDA -->
-        <header class="no-break">
-            <div class="company-info">
-                <h1>{{ azienda_emittente.nome_azienda }}</h1>
-                {% if azienda_emittente.indirizzo_azienda %}
-                <p>{{ azienda_emittente.indirizzo_azienda.via }}</p>
-                <p>{{ azienda_emittente.indirizzo_azienda.cap }} {{ azienda_emittente.indirizzo_azienda.citta }} ({{ azienda_emittente.indirizzo_azienda.provincia }})</p>
-                {% endif %}
-                {% if azienda_emittente.partita_iva_azienda %}
-                <p><strong>P.IVA:</strong> {{ azienda_emittente.partita_iva_azienda }}</p>
-                {% endif %}
-                {% if azienda_emittente.codice_fiscale_azienda %}
-                <p><strong>Cod. Fiscale:</strong> {{ azienda_emittente.codice_fiscale_azienda }}</p>
-                {% endif %}
-                {% if azienda_emittente.email_azienda %}
-                <p><strong>Email:</strong> {{ azienda_emittente.email_azienda }}</p>
-                {% endif %}
-                {% if azienda_emittente.telefono_azienda %}
-                <p><strong>Tel:</strong> {{ azienda_emittente.telefono_azienda }}</p>
-                {% endif %}
-            </div>
-            {% if azienda_emittente.logo_url %}
-            <div>
-                <img src="{{ azienda_emittente.logo_url }}" alt="Logo {{ azienda_emittente.nome_azienda }}" class="company-logo">
-            </div>
-            {% endif %}
-        </header>
-
-        <!-- METADATI E CLIENTE -->
-        <div class="metadati-grid">
-            <div class="section metadati-section no-break">
-                <h2>PREVENTIVO</h2>
-                <p><strong>Numero:</strong> {{ metadati_preventivo.numero_preventivo }}</p>
-                <p><strong>Data Emissione:</strong> {{ metadati_preventivo.data_emissione if metadati_preventivo.data_emissione else 'N/D' }}</p>
-                {% if metadati_preventivo.data_scadenza %}
-                <p><strong>Data Scadenza:</strong> {{ metadati_preventivo.data_scadenza }}</p>
-                {% endif %}
-                {% if metadati_preventivo.oggetto_preventivo %}
-                <p><strong>Oggetto:</strong></p>
-                <p>{{ metadati_preventivo.oggetto_preventivo }}</p>
-                {% endif %}
-            </div>
-
-            <div class="section cliente-section no-break">
-                <h2>Spett.le Cliente</h2>
-                <div class="cliente-box">
-                    {% if cliente_destinatario.nome_cliente %}
-                    <h3>{{ cliente_destinatario.nome_cliente }}</h3>
-                    {% endif %}
-                    {% if cliente_destinatario.indirizzo %}
-                    <p>{{ cliente_destinatario.indirizzo.via }}</p>
-                    <p>{{ cliente_destinatario.indirizzo.cap }} {{ cliente_destinatario.indirizzo.citta }} ({{ cliente_destinatario.indirizzo.provincia }})</p>
-                    {% endif %}
-                    {% if cliente_destinatario.partita_iva %}
-                    <p><strong>P.IVA:</strong> {{ cliente_destinatario.partita_iva }}</p>
-                    {% endif %}
-                    {% if cliente_destinatario.codice_fiscale %}
-                    <p><strong>Cod. Fiscale:</strong> {{ cliente_destinatario.codice_fiscale }}</p>
-                    {% endif %}
-                    {% if cliente_destinatario.email %}
-                    <p><strong>Email:</strong> {{ cliente_destinatario.email }}</p>
-                    {% endif %}
-                    {% if cliente_destinatario.telefono %}
-                    <p><strong>Telefono:</strong> {{ cliente_destinatario.telefono }}</p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- TABELLA PRODOTTI -->
-        <div class="section">
-            <h2>Prodotti/Servizi Offerti</h2>
-            {% if corpo_preventivo and corpo_preventivo.righe %}
-            <table class="tabella-prodotti">
-                <thead>
-                    <tr>
-                        <th class="col-numero">#</th>
-                        <th class="col-descrizione">Descrizione</th>
-                        <th class="col-quantita">Qtà</th>
-                        <th class="col-unita">Unità</th>
-                        <th class="col-prezzo">Prezzo Unit.</th>
-                        <th class="col-totale">Totale</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for riga in corpo_preventivo.righe %}
-                    <tr>
-                        <td class="col-numero">{{ loop.index }}</td>
-                        <td class="col-descrizione">
-                            <div class="descrizione-prodotto">{{ riga.descrizione }}</div>
-                            {% if riga.note_riga %}
-                            <div class="note-riga">{{ riga.note_riga }}</div>
+        <!-- RENDERING DINAMICO DEI MODULI SECONDO TEMPLATE -->
+        {% for module in modules_order %}
+            {% if module.enabled %}
+                {% set module_name = module.module_name %}
+                
+                {% if module_name == 'intestazione_azienda' %}
+                    <!-- INTESTAZIONE AZIENDA -->
+                    <header class="no-break">
+                        <div class="company-info">
+                            <h1>{{ document_data.azienda_emittente.nome_azienda }}</h1>
+                            {% if document_data.azienda_emittente.indirizzo_azienda %}
+                            <p>{{ document_data.azienda_emittente.indirizzo_azienda.via }}</p>
+                            <p>{{ document_data.azienda_emittente.indirizzo_azienda.cap }} {{ document_data.azienda_emittente.indirizzo_azienda.citta }} ({{ document_data.azienda_emittente.indirizzo_azienda.provincia }})</p>
                             {% endif %}
-                        </td>
-                        <td class="col-quantita">{{ riga.quantita }}</td>
-                        <td class="col-unita">{{ riga.unita_misura }}</td>
-                        <td class="col-prezzo">€ {{ "%.2f"|format(riga.prezzo_unitario_netto) }}</td>
-                        <td class="col-totale">€ {{ "%.2f"|format(riga.subtotale_riga_netto or (riga.quantita * riga.prezzo_unitario_netto * (1 - (riga.sconto_riga_percentuale or 0)/100))) }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <p><em>Nessuna voce inserita nel preventivo.</em></p>
+                            {% if document_data.azienda_emittente.partita_iva_azienda %}
+                            <p><strong>P.IVA:</strong> {{ document_data.azienda_emittente.partita_iva_azienda }}</p>
+                            {% endif %}
+                            {% if document_data.azienda_emittente.codice_fiscale_azienda %}
+                            <p><strong>Cod. Fiscale:</strong> {{ document_data.azienda_emittente.codice_fiscale_azienda }}</p>
+                            {% endif %}
+                            {% if document_data.azienda_emittente.email_azienda %}
+                            <p><strong>Email:</strong> {{ document_data.azienda_emittente.email_azienda }}</p>
+                            {% endif %}
+                            {% if document_data.azienda_emittente.telefono_azienda %}
+                            <p><strong>Tel:</strong> {{ document_data.azienda_emittente.telefono_azienda }}</p>
+                            {% endif %}
+                        </div>
+                        {% if document_data.azienda_emittente.logo_url %}
+                        <div>
+                            <img src="{{ document_data.azienda_emittente.logo_url }}" alt="Logo {{ document_data.azienda_emittente.nome_azienda }}" class="company-logo">
+                        </div>
+                        {% endif %}
+                    </header>
+                
+                {% elif module_name == 'metadati_preventivo' %}
+                    <!-- METADATI PREVENTIVO -->
+                    <div class="section metadati-section no-break">
+                        <h2>PREVENTIVO</h2>
+                        <p><strong>Numero:</strong> {{ document_data.metadati_preventivo.numero_preventivo }}</p>
+                        <p><strong>Data Emissione:</strong> {{ document_data.metadati_preventivo.data_emissione if document_data.metadati_preventivo.data_emissione else 'N/D' }}</p>
+                        {% if document_data.metadati_preventivo.data_scadenza %}
+                        <p><strong>Data Scadenza:</strong> {{ document_data.metadati_preventivo.data_scadenza }}</p>
+                        {% endif %}
+                        {% if document_data.metadati_preventivo.oggetto_preventivo %}
+                        <p><strong>Oggetto:</strong></p>
+                        <p>{{ document_data.metadati_preventivo.oggetto_preventivo }}</p>
+                        {% endif %}
+                    </div>
+                
+                {% elif module_name == 'intestazione_cliente' %}
+                    <!-- INTESTAZIONE CLIENTE -->
+                    <div class="section cliente-section no-break">
+                        <h2>Spett.le Cliente</h2>
+                        <div class="cliente-box">
+                            {% if document_data.cliente_destinatario.nome_cliente %}
+                            <h3>{{ document_data.cliente_destinatario.nome_cliente }}</h3>
+                            {% endif %}
+                            {% if document_data.cliente_destinatario.indirizzo %}
+                            <p>{{ document_data.cliente_destinatario.indirizzo.via }}</p>
+                            <p>{{ document_data.cliente_destinatario.indirizzo.cap }} {{ document_data.cliente_destinatario.indirizzo.citta }} ({{ document_data.cliente_destinatario.indirizzo.provincia }})</p>
+                            {% endif %}
+                            {% if document_data.cliente_destinatario.partita_iva %}
+                            <p><strong>P.IVA:</strong> {{ document_data.cliente_destinatario.partita_iva }}</p>
+                            {% endif %}
+                            {% if document_data.cliente_destinatario.codice_fiscale %}
+                            <p><strong>Cod. Fiscale:</strong> {{ document_data.cliente_destinatario.codice_fiscale }}</p>
+                            {% endif %}
+                            {% if document_data.cliente_destinatario.email %}
+                            <p><strong>Email:</strong> {{ document_data.cliente_destinatario.email }}</p>
+                            {% endif %}
+                            {% if document_data.cliente_destinatario.telefono %}
+                            <p><strong>Telefono:</strong> {{ document_data.cliente_destinatario.telefono }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                
+                {% elif module_name == 'tabella_preventivo' %}
+                    <!-- TABELLA PRODOTTI -->
+                    <div class="section">
+                        <h2>Prodotti/Servizi Offerti</h2>
+                        {% if document_data.corpo_preventivo and document_data.corpo_preventivo.righe %}
+                        <table class="tabella-prodotti">
+                            <thead>
+                                <tr>
+                                    <th class="col-numero">#</th>
+                                    <th class="col-descrizione">Descrizione</th>
+                                    <th class="col-quantita">Qtà</th>
+                                    <th class="col-unita">Unità</th>
+                                    <th class="col-prezzo">Prezzo Unit.</th>
+                                    <th class="col-totale">Totale</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for riga in document_data.corpo_preventivo.righe %}
+                                <tr>
+                                    <td class="col-numero">{{ loop.index }}</td>
+                                    <td class="col-descrizione">
+                                        <div class="descrizione-prodotto">{{ riga.descrizione }}</div>
+                                        {% if riga.note_riga %}
+                                        <div class="note-riga">{{ riga.note_riga }}</div>
+                                        {% endif %}
+                                    </td>
+                                    <td class="col-quantita">{{ riga.quantita }}</td>
+                                    <td class="col-unita">{{ riga.unita_misura }}</td>
+                                    <td class="col-prezzo">€ {{ "%.2f"|format(riga.prezzo_unitario_netto) }}</td>
+                                    <td class="col-totale">€ {{ "%.2f"|format(riga.subtotale_riga_netto or (riga.quantita * riga.prezzo_unitario_netto * (1 - (riga.sconto_riga_percentuale or 0)/100))) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        {% else %}
+                        <p><em>Nessuna voce inserita nel preventivo.</em></p>
+                        {% endif %}
+                    </div>
+                
+                {% elif module_name == 'sezione_totali' %}
+                    <!-- TOTALI -->
+                    <div class="totali-container no-break">
+                        <table class="totali-tabella">
+                            <tr>
+                                <td class="label">Subtotale:</td>
+                                <td class="valore">€ {{ "%.2f"|format(document_data.dettagli_totali.totale_imponibile_netto) }}</td>
+                            </tr>
+                            <tr>
+                                <td class="label">IVA:</td>
+                                <td class="valore">€ {{ "%.2f"|format(document_data.dettagli_totali.totale_iva) }}</td>
+                            </tr>
+                            <tr class="totale-finale">
+                                <td class="label">TOTALE GENERALE:</td>
+                                <td class="valore">€ {{ "%.2f"|format(document_data.dettagli_totali.totale_generale_lordo) }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                
+                {% elif module_name == 'condizioni_generali' %}
+                    <!-- CONDIZIONI GENERALI -->
+                    {% if document_data.condizioni_contrattuali and document_data.condizioni_contrattuali.testo_condizioni %}
+                    <div class="section condizioni no-break">
+                        <div class="condizioni-box">
+                            <h3>Condizioni Generali</h3>
+                            <div class="condizioni-testo">{{ document_data.condizioni_contrattuali.testo_condizioni }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                
+                {% elif module_name == 'footer_preventivo' %}
+                    <!-- FOOTER -->
+                    <footer class="no-break">
+                        {% if document_data.elementi_footer %}
+                            {% if document_data.elementi_footer.note_finali %}
+                            <div class="footer-info">
+                                <strong>Note:</strong><br>
+                                {{ document_data.elementi_footer.note_finali }}
+                            </div>
+                            {% endif %}
+                            {% if document_data.elementi_footer.dati_pagamento %}
+                            <div class="footer-info">
+                                <strong>Modalità di pagamento:</strong> {{ document_data.elementi_footer.dati_pagamento }}
+                            </div>
+                            {% endif %}
+                            {% if document_data.elementi_footer.validita_preventivo %}
+                            <div class="footer-info">
+                                <strong>Validità:</strong> {{ document_data.elementi_footer.validita_preventivo }}
+                            </div>
+                            {% endif %}
+                            {% if document_data.elementi_footer.firma_azienda %}
+                            <div class="footer-info">
+                                <strong>Firma:</strong> {{ document_data.elementi_footer.firma_azienda }}
+                            </div>
+                            {% endif %}
+                        {% endif %}
+                        
+                        <div class="timestamp">
+                            Preventivo generato il {{ document_data.metadati_preventivo.data_emissione or "data corrente" }}
+                        </div>
+                    </footer>
+                {% endif %}
             {% endif %}
-        </div>
-
-        <!-- TOTALI -->
-        <div class="totali-container no-break">
-            <table class="totali-tabella">
-                <tr>
-                    <td class="label">Subtotale:</td>
-                    <td class="valore">€ {{ "%.2f"|format(dettagli_totali.totale_imponibile_netto) }}</td>
-                </tr>
-                <tr>
-                    <td class="label">IVA:</td>
-                    <td class="valore">€ {{ "%.2f"|format(dettagli_totali.totale_iva) }}</td>
-                </tr>
-                <tr class="totale-finale">
-                    <td class="label">TOTALE GENERALE:</td>
-                    <td class="valore">€ {{ "%.2f"|format(dettagli_totali.totale_generale_lordo) }}</td>
-                </tr>
-            </table>
-        </div>
-
-        <!-- CONDIZIONI GENERALI -->
-        {% if condizioni_contrattuali and condizioni_contrattuali.testo_condizioni %}
-        <div class="section condizioni no-break">
-            <div class="condizioni-box">
-                <h3>Condizioni Generali</h3>
-                <div class="condizioni-testo">{{ condizioni_contrattuali.testo_condizioni }}</div>
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- FOOTER -->
-        <footer class="no-break">
-            {% if elementi_footer %}
-                {% if elementi_footer.note_finali %}
-                <div class="footer-info">
-                    <strong>Note:</strong><br>
-                    {{ elementi_footer.note_finali }}
-                </div>
-                {% endif %}
-                {% if elementi_footer.dati_pagamento %}
-                <div class="footer-info">
-                    <strong>Modalità di pagamento:</strong> {{ elementi_footer.dati_pagamento }}
-                </div>
-                {% endif %}
-                {% if elementi_footer.validita_preventivo %}
-                <div class="footer-info">
-                    <strong>Validità:</strong> {{ elementi_footer.validita_preventivo }}
-                </div>
-                {% endif %}
-                {% if elementi_footer.firma_azienda %}
-                <div class="footer-info">
-                    <strong>Firma:</strong> {{ elementi_footer.firma_azienda }}
-                </div>
-                {% endif %}
-            {% endif %}
-            
-            <div class="timestamp">
-                Preventivo generato il {{ metadati_preventivo.data_emissione or "data corrente" }}
-            </div>
-        </footer>
+        {% endfor %}
     </div>
 </body>
 </html> 
