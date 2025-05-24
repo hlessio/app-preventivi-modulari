@@ -9,10 +9,13 @@
         <div class="md:flex md:items-center md:justify-between">
             <div class="min-w-0 flex-1">
                 <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
-                    Dashboard Preventivi
+                    <!-- Titolo dinamico in base alla vista -->
+                    <span x-show="currentView === 'attivi'">Dashboard Preventivi Attivi</span>
+                    <span x-show="currentView === 'cestinati'">Cestino Preventivi</span>
                 </h2>
                 <p class="mt-1 text-sm text-gray-500">
-                    Gestisci i tuoi preventivi e crea nuovi documenti
+                    <span x-show="currentView === 'attivi'">Gestisci i tuoi preventivi e crea nuovi documenti</span>
+                    <span x-show="currentView === 'cestinati'">Visualizza i preventivi eliminati di recente</span>
                 </p>
             </div>
             <div class="mt-4 flex md:ml-4 md:mt-0 space-x-3">
@@ -21,7 +24,9 @@
                     <i class="fas fa-cogs mr-2"></i>
                     Template Composer
                 </a>
+                <!-- Pulsante Nuovo Preventivo - Mostra solo se in vista attivi -->
                 <a href="/preventivo/nuovo" 
+                   x-show="currentView === 'attivi'"
                    class="inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500">
                     <i class="fas fa-plus mr-2"></i>
                     Nuovo Preventivo
@@ -29,8 +34,8 @@
             </div>
         </div>
 
-        <!-- Stats Cards -->
-        <div class="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4" id="stats-container">
+        <!-- Stats Cards (mostra solo per la vista attivi, o adatta per cestino) -->
+        <div x-show="currentView === 'attivi'" class="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4" id="stats-container">
             <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow border border-gray-200">
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
@@ -39,7 +44,7 @@
                     <div class="ml-5 w-0 flex-1">
                         <dl>
                             <dt class="text-sm font-medium text-gray-500 truncate">
-                                Preventivi Totali
+                                Preventivi Attivi
                             </dt>
                             <dd class="text-lg font-medium text-gray-900" x-text="stats.totali || 0">
                                 0
@@ -93,10 +98,30 @@
                     <div class="ml-5 w-0 flex-1">
                         <dl>
                             <dt class="text-sm font-medium text-gray-500 truncate">
-                                Valore Totale
+                                Valore Totale (Attivi)
                             </dt>
                             <dd class="text-lg font-medium text-gray-900" x-text="formatCurrency(stats.valore_totale || 0)">
                                 €0,00
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Stats per Cestino (opzionale) -->
+        <div x-show="currentView === 'cestinati'" class="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow border border-gray-200">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-trash-alt text-red-600 text-2xl"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">
+                                Elementi nel Cestino
+                            </dt>
+                            <dd class="text-lg font-medium text-gray-900" x-text="stats.totali || 0">
+                                0
                             </dd>
                         </dl>
                     </div>
@@ -107,6 +132,28 @@
 
     <!-- Filtri e Ricerca -->
     <div class="mb-6 bg-white rounded-lg shadow border border-gray-200 p-6">
+        <div class="flex justify-between items-center mb-4">
+            <div class="flex space-x-1 border border-gray-300 rounded-md p-1">
+                <button @click="switchView('attivi')" 
+                        :class="{'bg-blue-600 text-white': currentView === 'attivi', 'bg-gray-100 text-gray-700 hover:bg-gray-200': currentView !== 'attivi'}"
+                        class="px-4 py-2 text-sm font-medium rounded-md focus:outline-none">
+                    <i class="fas fa-list-ul mr-2"></i>Preventivi Attivi
+                </button>
+                <button @click="switchView('cestinati')" 
+                        :class="{'bg-red-600 text-white': currentView === 'cestinati', 'bg-gray-100 text-gray-700 hover:bg-gray-200': currentView !== 'cestinati'}"
+                        class="px-4 py-2 text-sm font-medium rounded-md focus:outline-none">
+                    <i class="fas fa-trash mr-2"></i>Cestino
+                </button>
+            </div>
+            <!-- Pulsante Svuota Cestino (mostra solo in vista cestino) -->
+            <div x-show="currentView === 'cestinati'">
+                <button @click="svuotaTuttoCestino()" 
+                        class="inline-flex items-center rounded-md bg-red-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700">
+                    <i class="fas fa-eraser mr-2"></i>Svuota Tutto il Cestino
+                </button>
+            </div>
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <!-- Ricerca -->
             <div class="md:col-span-2">
@@ -168,7 +215,10 @@
     <!-- Lista Preventivi -->
     <div class="bg-white shadow border border-gray-200 rounded-lg overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-medium text-gray-900">Preventivi</h3>
+            <h3 class="text-lg font-medium text-gray-900">
+                <span x-show="currentView === 'attivi'">Lista Preventivi Attivi</span>
+                <span x-show="currentView === 'cestinati'">Contenuto Cestino</span>
+            </h3>
         </div>
         
         <div id="preventivi-container">
@@ -194,10 +244,11 @@
                                     Oggetto
                                 </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Stato
+                                    Stato Funzionale
                                 </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Data
+                                    <span x-show="currentView === 'attivi'">Data Creazione</span>
+                                    <span x-show="currentView === 'cestinati'">Data Cestinamento</span>
                                 </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Valore
@@ -214,8 +265,7 @@
                                         <div>
                                             <div class="text-sm font-medium text-gray-900" x-text="preventivo.numero_preventivo">
                                             </div>
-                                            <div class="text-sm text-gray-500" x-text="preventivo.cliente || 'N/A'">
-                                            </div>
+                                            <div class="text-sm text-gray-500" x-text="preventivo.nome_cliente || 'N/D'"></div>
                                         </div>
                                     </td>
                                     <td class="px-6 py-4">
@@ -227,22 +277,51 @@
                                               :class="getStatoClass(preventivo.stato_preventivo)"
                                               x-text="preventivo.stato_preventivo || 'bozza'">
                                         </span>
+                                        <div x-show="currentView === 'cestinati' && preventivo.stato_record === 'cestinato'" 
+                                             class="mt-1 text-xs text-red-500">Cestinato</div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        <span x-text="formatDate(preventivo.created_at)"></span>
+                                        <span x-show="currentView === 'attivi'" x-text="formatDate(preventivo.created_at)"></span>
+                                        <span x-show="currentView === 'cestinati'" x-text="formatDate(preventivo.cestinato_il)"></span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        <span x-text="formatCurrency(preventivo.valore || 0)"></span>
+                                        <span x-text="formatCurrency(preventivo.valore_totale_lordo || 0)"></span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                                        <a :href="`/preventivo/${preventivo.id}/visualizza?user_id=da2cb935-e023-40dd-9703-d918f1066b24`"
-                                           class="text-blue-600 hover:text-blue-900">Visualizza</a>
-                                        <span class="text-gray-300">|</span>
-                                        <a :href="`/preventivo/${preventivo.id}/modifica`" 
-                                           class="text-green-600 hover:text-green-900">Modifica</a>
-                                        <span class="text-gray-300">|</span>
-                                        <a :href="`/preventivo/${preventivo.id}/pdf?user_id=da2cb935-e023-40dd-9703-d918f1066b24`"
-                                           class="text-red-600 hover:text-red-900">PDF</a>
+                                        <!-- Azioni per vista ATTIVI -->
+                                        <template x-if="currentView === 'attivi'">
+                                            <span>
+                                                <a :href="`/preventivo/${preventivo.id}/visualizza?user_id=da2cb935-e023-40dd-9703-d918f1066b24`"
+                                                   class="text-blue-500 hover:text-blue-700" title="Visualizza">
+                                                   <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a :href="`/preventivo/${preventivo.id}/modifica`" 
+                                                   class="text-green-500 hover:text-green-700 ml-2" title="Modifica">
+                                                   <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a :href="`/preventivo/${preventivo.id}/pdf?user_id=da2cb935-e023-40dd-9703-d918f1066b24`"
+                                                   target="_blank" class="text-red-500 hover:text-red-700 ml-2" title="Scarica PDF">
+                                                   <i class="fas fa-file-pdf"></i>
+                                                </a>
+                                                <button @click="cestinaPreventivo(preventivo.id)"
+                                                        class="text-yellow-600 hover:text-yellow-800 ml-2" title="Cestina">
+                                                        <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            </span>
+                                        </template>
+                                        <!-- Azioni per vista CESTINATI -->
+                                        <template x-if="currentView === 'cestinati'">
+                                            <span>
+                                                <button @click="ripristinaPreventivo(preventivo.id)"
+                                                        class="text-green-500 hover:text-green-700" title="Ripristina">
+                                                        <i class="fas fa-undo"></i>
+                                                </button>
+                                                <button @click="eliminaDefinitivamentePreventivo(preventivo.id)"
+                                                        class="text-red-600 hover:text-red-800 ml-2" title="Elimina Definitivamente">
+                                                        <i class="fas fa-trash"></i> <!-- Icona diversa o più forte -->
+                                                </button>
+                                            </span>
+                                        </template>
                                     </td>
                                 </tr>
                             </template>
@@ -253,9 +332,13 @@
                 <!-- Empty State -->
                 <div x-show="!loading && preventivi.length === 0" class="text-center py-12">
                     <i class="fas fa-file-invoice text-gray-300 text-6xl mb-4"></i>
-                    <h3 class="text-lg font-medium text-gray-900 mb-2">Nessun preventivo trovato</h3>
-                    <p class="text-gray-500 mb-6">Inizia creando il tuo primo preventivo</p>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">
+                        <span x-show="currentView === 'attivi'">Nessun preventivo attivo trovato</span>
+                        <span x-show="currentView === 'cestinati'">Il cestino è vuoto</span>
+                    </h3>
+                    <p class="text-gray-500 mb-6" x-show="currentView === 'attivi'">Inizia creando il tuo primo preventivo</p>
                     <a href="/preventivo/nuovo" 
+                       x-show="currentView === 'attivi'"
                        class="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500">
                         <i class="fas fa-plus mr-2"></i>
                         Crea Primo Preventivo
@@ -271,6 +354,7 @@
         return {
             loading: true,
             preventivi: [],
+            currentView: 'attivi', // 'attivi' o 'cestinati'
             stats: {
                 totali: 0,
                 in_attesa: 0,
@@ -285,38 +369,65 @@
 
             init() {
                 this.loadPreventivi();
-                this.loadStats();
             },
 
             async loadPreventivi() {
                 try {
                     this.loading = true;
+                    let endpoint = '/preventivi/attivi';
+                    if (this.currentView === 'cestinati') {
+                        endpoint = '/preventivi/cestinati';
+                    }
+
                     const params = new URLSearchParams({
-                        user_id: 'da2cb935-e023-40dd-9703-d918f1066b24', // TODO: Sostituire con user ID reale
-                        ...this.filters
+                        user_id: 'da2cb935-e023-40dd-9703-d918f1066b24',
+                        ...this.filters 
                     });
                     
-                    const response = await fetch(`/preventivi?${params}`);
+                    const response = await fetch(`${endpoint}?${params}`);
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.detail || 'Errore dal server');
+                    }
                     const data = await response.json();
                     
-                    this.preventivi = data.preventivi || [];
+                    this.preventivi = data || []; 
+                    this.updateStats();
+
                 } catch (error) {
                     console.error('Errore nel caricamento preventivi:', error);
-                    showNotification('Errore nel caricamento dei preventivi', 'error');
+                    showNotification(error.message || 'Errore nel caricamento dei preventivi', 'error');
+                    this.preventivi = [];
                 } finally {
                     this.loading = false;
                 }
             },
 
-            async loadStats() {
-                // TODO: Implementare endpoint per le statistiche
-                // Per ora calcoliamo dalle preventivi caricati
-                this.stats = {
-                    totali: this.preventivi.length,
-                    in_attesa: this.preventivi.filter(p => p.stato_preventivo === 'inviato').length,
-                    approvati: this.preventivi.filter(p => p.stato_preventivo === 'approvato').length,
-                    valore_totale: this.preventivi.reduce((sum, p) => sum + (p.valore || 0), 0)
-                };
+            updateStats() {
+                if (this.currentView === 'attivi') {
+                    let valoreComplessivoAttivi = 0;
+                    if (this.preventivi && this.preventivi.length > 0) {
+                         valoreComplessivoAttivi = this.preventivi.reduce((sum, p) => sum + (p.valore_totale_lordo || 0), 0);
+                    }
+                    this.stats = {
+                        totali: this.preventivi.length,
+                        in_attesa: this.preventivi.filter(p => p.stato_preventivo === 'inviato').length,
+                        approvati: this.preventivi.filter(p => p.stato_preventivo === 'approvato').length,
+                        valore_totale: valoreComplessivoAttivi
+                    };
+                } else {
+                    this.stats = {
+                        totali: this.preventivi.length, 
+                        in_attesa: 0,
+                        approvati: 0,
+                        valore_totale: 0
+                    };
+                }
+            },
+
+            switchView(view) {
+                this.currentView = view;
+                this.loadPreventivi();
             },
 
             getStatoClass(stato) {
@@ -335,25 +446,92 @@
                 return new Date(dateString).toLocaleDateString('it-IT');
             },
 
+            formatCurrency(value) {
+                if (typeof value !== 'number') {
+                    value = 0;
+                }
+                return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value);
+            },
+
             async duplicaPreventivo(id) {
                 if (!confirm('Sei sicuro di voler duplicare questo preventivo?')) return;
-                
                 try {
-                    // TODO: Implementare endpoint per duplicazione
-                    showNotification('Funzionalità in sviluppo', 'error');
+                    showNotification('Funzionalità duplicazione preventivo non ancora implementata.', 'info');
                 } catch (error) {
                     showNotification('Errore nella duplicazione', 'error');
                 }
             },
 
-            async eliminaPreventivo(id) {
-                if (!confirm('Sei sicuro di voler eliminare questo preventivo? L\'azione non può essere annullata.')) return;
-                
+            async cestinaPreventivo(id) {
+                if (!confirm('Sei sicuro di voler spostare questo preventivo nel cestino?')) return;
                 try {
-                    // TODO: Implementare endpoint per eliminazione
-                    showNotification('Funzionalità in sviluppo', 'error');
+                    const response = await fetch(`/preventivo/${id}/cestina?user_id=da2cb935-e023-40dd-9703-d918f1066b24`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                    });
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.detail || 'Errore durante lo spostamento nel cestino');
+                    }
+                    showNotification('Preventivo spostato nel cestino', 'success');
+                    this.loadPreventivi();
                 } catch (error) {
-                    showNotification('Errore nell\'eliminazione', 'error');
+                    showNotification(error.message, 'error');
+                }
+            },
+
+            async ripristinaPreventivo(id) {
+                if (!confirm('Sei sicuro di voler ripristinare questo preventivo?')) return;
+                try {
+                    const response = await fetch(`/preventivo/${id}/ripristina?user_id=da2cb935-e023-40dd-9703-d918f1066b24`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                    });
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.detail || 'Errore durante il ripristino');
+                    }
+                    showNotification('Preventivo ripristinato con successo', 'success');
+                    this.loadPreventivi();
+                } catch (error) {
+                    showNotification(error.message, 'error');
+                }
+            },
+
+            async eliminaDefinitivamentePreventivo(id) {
+                if (!confirm('Sei sicuro di voler eliminare DEFINITIVAMENTE questo preventivo? L\'azione non può essere annullata.')) return;
+                try {
+                    const response = await fetch(`/preventivo/${id}/definitivo?user_id=da2cb935-e023-40dd-9703-d918f1066b24`, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                    });
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.detail || 'Errore durante l\'eliminazione definitiva');
+                    }
+                    showNotification('Preventivo eliminato definitivamente', 'success');
+                    this.loadPreventivi();
+                } catch (error) {
+                    showNotification(error.message, 'error');
+                }
+            },
+
+            async svuotaTuttoCestino() {
+                if (!confirm('Sei sicuro di voler eliminare definitivamente tutti i preventivi nel cestino?')) return;
+                try {
+                    const response = await fetch('/preventivi/cestino/svuota_tutto?user_id=da2cb935-e023-40dd-9703-d918f1066b24', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                    });
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.detail || 'Errore durante lo svuotamento del cestino');
+                    }
+                    const result = await response.json();
+                    showNotification(`${result.count} preventivi eliminati dal cestino.`, 'success');
+                    this.loadPreventivi();
+                } catch (error) {
+                    showNotification(error.message || 'Errore svuotamento cestino', 'error');
                 }
             }
         }

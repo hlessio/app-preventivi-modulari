@@ -6,6 +6,7 @@
     <title>Template Document Composer</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
         /* Stili aggiuntivi specifici per il composer se necessario */
         .module-card {
@@ -108,11 +109,11 @@
                 <!-- Area Composizione Template -->
                 <div class="bg-white p-6 rounded-lg shadow">
                     <h2 class="text-xl font-semibold text-gray-700 mb-4">Composizione Moduli</h2>
-                    <div class="composer-area" 
+                    <div id="composer-modules-list" class="composer-area" 
                          @dragover.prevent 
-                         @drop="handleDrop($event)">
-                        <template x-for="(module, index) in template.modules" :key="index">
-                            <div class="module-card flex justify-between items-center">
+                         @drop.prevent="handleDrop($event)">
+                        <template x-for="(module, index) in template.modules" :key="module.module_name + '-' + index">
+                            <div :data-id="module.module_name" class="module-card flex justify-between items-center">
                                 <span x-text="module.displayName || module.module_name"></span>
                                 <div>
                                     <button @click="toggleModule(index)" class="text-sm px-2 py-1 rounded"
@@ -172,10 +173,30 @@
                 },
                 draggedModule: null, // Nome del modulo trascinato
                 availableModules: Object.keys(MODULE_DISPLAY_NAMES).map(key => ({ name: key, displayName: MODULE_DISPLAY_NAMES[key] })),
+                sortableInstance: null, // Per l'istanza di SortableJS
 
                 init() {
                     // Rendi disponibile l'istanza globalmente per la modale
                     window.templateComposer = this;
+                    this.initSortable(); // Inizializza SortableJS
+                },
+
+                initSortable() { // NUOVA FUNZIONE per inizializzare SortableJS
+                    const el = document.getElementById('composer-modules-list');
+                    if (el) {
+                        this.sortableInstance = new Sortable(el, {
+                            animation: 150,
+                            ghostClass: 'bg-blue-100', // Classe per l'elemento "fantasma" durante il drag
+                            onEnd: (evt) => {
+                                // evt.oldIndex e evt.newIndex sono gli indici prima e dopo il drag
+                                const movedItem = this.template.modules.splice(evt.oldIndex, 1)[0];
+                                this.template.modules.splice(evt.newIndex, 0, movedItem);
+                                this.updateOrder(); // Aggiorna gli 'order' numerici
+                            }
+                        });
+                    } else {
+                        console.error("Elemento 'composer-modules-list' non trovato per SortableJS.");
+                    }
                 },
 
                 setDraggedModule(moduleName) {
@@ -184,16 +205,20 @@
 
                 handleDrop(event) {
                     if (this.draggedModule) {
-                        const newModule = {
-                            module_name: this.draggedModule,
-                            displayName: MODULE_DISPLAY_NAMES[this.draggedModule] || this.draggedModule,
-                            order: this.template.modules.length + 1,
-                            enabled: true,
-                            custom_config: {}
-                        };
-                        this.template.modules.push(newModule);
-                        this.draggedModule = null; // Resetta
-                        this.updateOrder();
+                        // Verifica se l'elemento è stato droppato su un'area valida (non su un altro modulo di Sortable)
+                        // Questa logica potrebbe dover essere affinata se Sortable intercetta il drop prima
+                        if (event.target.id === 'composer-modules-list' || event.target.closest('#composer-modules-list')) {
+                            const newModule = {
+                                module_name: this.draggedModule,
+                                displayName: MODULE_DISPLAY_NAMES[this.draggedModule] || this.draggedModule,
+                                order: this.template.modules.length + 1, // L'ordine verrà aggiornato da updateOrder
+                                enabled: true,
+                                custom_config: {}
+                            };
+                            this.template.modules.push(newModule);
+                            this.updateOrder(); 
+                        }
+                        this.draggedModule = null; // Resetta sempre
                     }
                 },
 

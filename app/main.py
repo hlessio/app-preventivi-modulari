@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Depends, HTTPException, Query
+from fastapi import FastAPI, Request, Depends, HTTPException, Query, status
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 # from uuid import UUID # Rimuoviamo l'import UUID
 from typing import List, Optional
 
-from .models import PreventivoMasterModel, DocumentTemplateCreate, DocumentTemplateUpdate, DocumentTemplateResponse
+from .models import PreventivoMasterModel, DocumentTemplateCreate, DocumentTemplateUpdate, DocumentTemplateResponse, PreventivoListItem
 from .services.preventivo_calculator import calcola_totali_preventivo
 from .services.preventivo_service import PreventivoService
 from .services.document_template_service import DocumentTemplateService
@@ -14,6 +14,12 @@ from .services.document_template_service import DocumentTemplateService
 from .services.pdf_export_service import PDFExportService
 from .database import get_db, engine, Base
 from .db_models import Preventivo
+
+# Modelli Pydantic per la lista preventivi
+# Dovrebbero stare in models.py, ma per rapidità li metto qui temporaneamente
+from pydantic import BaseModel
+from datetime import datetime as dt_datetime # Alias per evitare conflitto
+import uuid
 
 # Crea le tabelle nel database (per ora facciamo così, in futuro useremo Alembic)
 # Commento perché ora usiamo Alembic per le migrazioni
@@ -99,7 +105,7 @@ async def visualizza_preventivo(
         # Recupera il template specifico
         template = template_service.get_template_by_id(template_id, user_id)
         if not template:
-            raise HTTPException(status_code=404, detail="Template non trovato")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template non trovato")
     else:
         # Utilizza il template di default per l'utente
         template = template_service.get_default_template(user_id, "preventivo")
@@ -116,9 +122,9 @@ async def visualizza_preventivo(
     )
 
 # Endpoint per salvare un preventivo
-@app.post("/preventivo/salva")
-async def salva_preventivo(
-    request: Request,
+@app.post("/preventivo/salva", status_code=status.HTTP_201_CREATED)
+async def salva_preventivo_endpoint(
+    request: Request, # Rinominato per chiarezza, non più salva_preventivo
     db: Session = Depends(get_db)
 ):
     """
@@ -148,43 +154,45 @@ async def salva_preventivo(
             "numero_preventivo": db_preventivo.numero_preventivo
         }
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Errore nel salvataggio: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Errore nel salvataggio: {str(e)}")
 
-# Endpoint per caricare un preventivo
-@app.get("/preventivo/{preventivo_id}")
-async def carica_preventivo(
-    preventivo_id: str,  # Cambiato da UUID a str
+# Endpoint per caricare un preventivo (dati completi per modifica)
+@app.get("/preventivo/{preventivo_id}", response_model=PreventivoMasterModel)
+async def carica_preventivo_endpoint(
+    preventivo_id: str,  # Rinominato per chiarezza
     user_id: str = Query(default="da2cb935-e023-40dd-9703-d918f1066b24", description="ID dell'utente"),  # UUID dell'utente di test
     db: Session = Depends(get_db)
 ):
     """
-    Carica un preventivo dal database.
+    Carica i dati completi di un preventivo attivo dal database per la modifica.
     """
     preventivo_service = PreventivoService(db)
-    preventivo_data = preventivo_service.carica_preventivo(preventivo_id, user_id)
+    # Carica solo preventivi attivi per la modifica
+    preventivo_data = preventivo_service.carica_preventivo(preventivo_id, user_id, solo_attivi=True)
     
     if not preventivo_data:
-        raise HTTPException(status_code=404, detail="Preventivo non trovato")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Preventivo attivo non trovato")
     
     return preventivo_data
 
-# Endpoint per visualizzare un preventivo caricato dal database
+# Endpoint per visualizzare un preventivo caricato dal database (HTML)
 @app.get("/preventivo/{preventivo_id}/visualizza", response_class=HTMLResponse)
 async def visualizza_preventivo_salvato(
     request: Request,
-    preventivo_id: str,  # Cambiato da UUID a str
-    user_id: str = Query(default="da2cb935-e023-40dd-9703-d918f1066b24", description="ID dell'utente"),  # UUID dell'utente di test
+    preventivo_id: str, 
+    user_id: str = Query(default="da2cb935-e023-40dd-9703-d918f1066b24", description="ID dell'utente"), 
     template_id: Optional[str] = Query(None, description="ID del template da utilizzare (opzionale)"),
     db: Session = Depends(get_db)
 ):
     """
-    Carica un preventivo dal database e lo visualizza utilizzando il template specificato o quello di default.
+    Carica un preventivo attivo dal database e lo visualizza utilizzando il template specificato o quello di default.
     """
     preventivo_service = PreventivoService(db)
-    preventivo_data = preventivo_service.carica_preventivo(preventivo_id, user_id)
+    # Carica solo preventivi attivi per la visualizzazione standard
+    preventivo_data = preventivo_service.carica_preventivo(preventivo_id, user_id, solo_attivi=True)
     
     if not preventivo_data:
-        raise HTTPException(status_code=404, detail="Preventivo non trovato")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Preventivo attivo non trovato")
     
     # Ricalcola i totali (per sicurezza)
     calcola_totali_preventivo(preventivo_data)
@@ -199,7 +207,7 @@ async def visualizza_preventivo_salvato(
         # Utilizza il template specificato
         template = template_service.get_template_by_id(template_id, user_id)
         if not template:
-            raise HTTPException(status_code=404, detail="Template non trovato")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template non trovato")
     else:
         # Se il preventivo ha un template associato, usalo, altrimenti usa il default
         if preventivo_data.metadati_preventivo and preventivo_data.metadati_preventivo.template_id:
@@ -224,33 +232,98 @@ async def visualizza_preventivo_salvato(
         {"request": request, **composed_data}
     )
 
-# Endpoint per elencare i preventivi di un utente
-@app.get("/preventivi")
-async def lista_preventivi(
-    user_id: str = Query(default="da2cb935-e023-40dd-9703-d918f1066b24", description="ID dell'utente"),  # UUID dell'utente di test
-    skip: int = 0,
-    limit: int = 100,
+# Endpoint per elencare i preventivi ATTIVI di un utente
+@app.get("/preventivi/attivi", response_model=List[PreventivoListItem])
+async def lista_preventivi_attivi_endpoint(
+    user_id: str = Query(default="da2cb935-e023-40dd-9703-d918f1066b24", description="ID dell'utente"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db)
 ):
     """
-    Restituisce la lista dei preventivi per un utente.
+    Restituisce la lista dei preventivi ATTIVI per un utente con paginazione.
     """
     preventivo_service = PreventivoService(db)
-    preventivi = preventivo_service.lista_preventivi(user_id, skip, limit)
-    
-    # Converte la lista in un formato JSON-serializable
-    preventivi_json = []
-    for p in preventivi:
-        preventivi_json.append({
-            "id": str(p.id),
-            "numero_preventivo": p.numero_preventivo,
-            "oggetto_preventivo": p.oggetto_preventivo,
-            "stato_preventivo": p.stato_preventivo,
-            "created_at": p.created_at.isoformat(),
-            "updated_at": p.updated_at.isoformat()
-        })
-    
-    return {"preventivi": preventivi_json}
+    preventivi_attivi = preventivo_service.lista_preventivi_attivi(user_id, skip, limit)
+    return preventivi_attivi # Pydantic si occuperà della serializzazione
+
+# Endpoint per elencare i preventivi CESTINATI di un utente
+@app.get("/preventivi/cestinati", response_model=List[PreventivoListItem])
+async def lista_preventivi_cestinati_endpoint(
+    user_id: str = Query(default="da2cb935-e023-40dd-9703-d918f1066b24", description="ID dell'utente"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    db: Session = Depends(get_db)
+):
+    """
+    Restituisce la lista dei preventivi CESTINATI per un utente con paginazione.
+    """
+    preventivo_service = PreventivoService(db)
+    preventivi_cestinati = preventivo_service.lista_preventivi_cestinati(user_id, skip, limit)
+    return preventivi_cestinati
+
+# Endpoint per CESTINARE un preventivo (soft delete)
+@app.post("/preventivo/{preventivo_id}/cestina", status_code=status.HTTP_200_OK)
+async def cestina_preventivo_endpoint(
+    preventivo_id: str,
+    user_id: str = Query(default="da2cb935-e023-40dd-9703-d918f1066b24", description="ID dell'utente"),
+    db: Session = Depends(get_db)
+):
+    preventivo_service = PreventivoService(db)
+    preventivo_cestinato = preventivo_service.cestina_preventivo(preventivo_id, user_id)
+    if not preventivo_cestinato:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Preventivo attivo non trovato o già cestinato")
+    return {"message": "Preventivo spostato nel cestino", "preventivo_id": preventivo_id, "stato_record": "cestinato"}
+
+# Endpoint per RIPRISTINARE un preventivo dal cestino
+@app.post("/preventivo/{preventivo_id}/ripristina", status_code=status.HTTP_200_OK)
+async def ripristina_preventivo_endpoint(
+    preventivo_id: str,
+    user_id: str = Query(default="da2cb935-e023-40dd-9703-d918f1066b24", description="ID dell'utente"),
+    db: Session = Depends(get_db)
+):
+    preventivo_service = PreventivoService(db)
+    preventivo_ripristinato = preventivo_service.ripristina_preventivo(preventivo_id, user_id)
+    if not preventivo_ripristinato:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Preventivo non trovato nel cestino o errore nel ripristino")
+    return {"message": "Preventivo ripristinato con successo", "preventivo_id": preventivo_id, "stato_record": "attivo"}
+
+# Endpoint per ELIMINARE DEFINITIVAMENTE un preventivo
+@app.delete("/preventivo/{preventivo_id}/definitivo", status_code=status.HTTP_200_OK)
+async def elimina_definitivamente_preventivo_endpoint(
+    preventivo_id: str,
+    user_id: str = Query(default="da2cb935-e023-40dd-9703-d918f1066b24", description="ID dell'utente"),
+    db: Session = Depends(get_db)
+):
+    preventivo_service = PreventivoService(db)
+    success = preventivo_service.elimina_definitivamente_preventivo(preventivo_id, user_id)
+    if not success:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Preventivo non trovato")
+    return {"message": "Preventivo eliminato definitivamente", "preventivo_id": preventivo_id}
+
+# Endpoint per SVUOTARE IL CESTINO dei preventivi scaduti per l'utente
+@app.post("/preventivi/cestino/svuota_scaduti", status_code=status.HTTP_200_OK)
+async def svuota_cestino_utente_endpoint(
+    user_id: str = Query(default="da2cb935-e023-40dd-9703-d918f1066b24", description="ID dell'utente"),
+    giorni_scadenza: int = Query(30, description="Numero di giorni dopo i quali un preventivo cestinato è considerato scaduto"),
+    db: Session = Depends(get_db)
+):
+    preventivo_service = PreventivoService(db)
+    num_eliminati = preventivo_service.svuota_cestino_scaduti(user_id=user_id, giorni_scadenza=giorni_scadenza)
+    return {"message": f"{num_eliminati} preventivi scaduti eliminati dal cestino.", "count": num_eliminati}
+
+# Endpoint per SVUOTARE TUTTO IL CESTINO per l'utente
+@app.post("/preventivi/cestino/svuota_tutto", status_code=status.HTTP_200_OK)
+async def svuota_tutto_cestino_utente_endpoint(
+    user_id: str = Query(default="da2cb935-e023-40dd-9703-d918f1066b24", description="ID dell'utente"),
+    db: Session = Depends(get_db)
+):
+    preventivo_service = PreventivoService(db)
+    num_eliminati = preventivo_service.svuota_tutto_cestino(user_id=user_id)
+    return {"message": f"{num_eliminati} preventivi eliminati definitivamente dal cestino.", "count": num_eliminati}
+
+# Il vecchio endpoint /preventivi è stato sostituito da /preventivi/attivi e /preventivi/cestinati
+# @app.get("/preventivi") ... -> Rimosso o da aggiornare se si vuole un comportamento diverso
 
 # Endpoint per export PDF da dati POST
 @app.post("/preventivo/pdf", response_class=Response)
@@ -287,7 +360,7 @@ async def genera_pdf_preventivo(preventivo_data: PreventivoMasterModel, db: Sess
             }
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Errore nella generazione del PDF: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Errore nella generazione del PDF: {str(e)}")
 
 # Endpoint per export PDF di un preventivo salvato
 @app.get("/preventivo/{preventivo_id}/pdf", response_class=Response)
@@ -301,12 +374,12 @@ async def scarica_pdf_preventivo(
     Scarica il PDF di un preventivo salvato nel database.
     """
     try:
-        # Carica il preventivo dal database
+        # Carica il preventivo dal database (solo attivi di default)
         preventivo_service = PreventivoService(db)
-        preventivo_data = preventivo_service.carica_preventivo(preventivo_id, user_id)
+        preventivo_data = preventivo_service.carica_preventivo(preventivo_id, user_id, solo_attivi=True)
         
         if not preventivo_data:
-            raise HTTPException(status_code=404, detail="Preventivo non trovato")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Preventivo attivo non trovato")
         
         # Istanzia PDFExportService con la sessione DB
         pdf_service_local = PDFExportService(BASE_DIR / "templates", db=db)
@@ -316,7 +389,7 @@ async def scarica_pdf_preventivo(
             # Utilizza il template specificato nel parametro
             template = template_service.get_template_by_id(template_id, user_id)
             if not template:
-                raise HTTPException(status_code=404, detail="Template non trovato")
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template non trovato")
         else:
             # Se il preventivo ha un template associato, usalo, altrimenti usa il default
             if preventivo_data.metadati_preventivo and preventivo_data.metadati_preventivo.template_id:
@@ -350,7 +423,7 @@ async def scarica_pdf_preventivo(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Errore nella generazione del PDF: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Errore nella generazione del PDF: {str(e)}")
 
 # ============================================
 # ENDPOINTS TEMPLATE DOCUMENTI
@@ -363,7 +436,7 @@ async def template_composer(request: Request):
     """
     return templates.TemplateResponse("template_composer.html", {"request": request})
 
-@app.get("/templates", response_class=JSONResponse)
+@app.get("/templates", response_model=List[DocumentTemplateResponse]) # Aggiornato response_model
 async def lista_template_utente(
     document_type: Optional[str] = Query(None, description="Filtra per tipo documento"),
     user_id: str = Query(default="da2cb935-e023-40dd-9703-d918f1066b24", description="ID dell'utente"),
@@ -373,30 +446,13 @@ async def lista_template_utente(
     Restituisce la lista dei template dell'utente
     """
     template_service = DocumentTemplateService(db)
-    templates = template_service.get_user_templates(user_id, document_type)
+    templates_db = template_service.get_user_templates(user_id, document_type)
     
-    # Converte in formato JSON-serializable
-    templates_json = []
-    for template in templates:
-        templates_json.append({
-            "id": str(template.id),
-            "name": template.name,
-            "description": template.description,
-            "document_type": template.document_type,
-            "module_composition": template.module_composition,
-            "page_format": template.page_format,
-            "page_orientation": template.page_orientation,
-            "margins": template.margins,
-            "is_default": template.is_default,
-            "is_public": template.is_public,
-            "version": template.version,
-            "created_at": template.created_at.isoformat(),
-            "updated_at": template.updated_at.isoformat()
-        })
-    
-    return {"templates": templates_json}
+    # Converte in formato JSON-serializable usando il modello Pydantic DocumentTemplateResponse
+    return [DocumentTemplateResponse.from_orm(t) for t in templates_db] # from_orm è per Pydantic V1
+    # Per Pydantic V2: return [DocumentTemplateResponse.model_validate(t) for t in templates_db]
 
-@app.post("/templates", response_class=JSONResponse)
+@app.post("/templates", response_class=JSONResponse, status_code=status.HTTP_201_CREATED)
 async def crea_template(
     template_data: DocumentTemplateCreate,
     user_id: str = Query(default="da2cb935-e023-40dd-9703-d918f1066b24", description="ID dell'utente"),
@@ -411,7 +467,7 @@ async def crea_template(
     validation_result = template_service.validate_module_composition(template_data.module_composition)
     if not validation_result["valid"]:
         raise HTTPException(
-            status_code=400, 
+            status_code=status.HTTP_400_BAD_REQUEST, 
             detail={
                 "message": "Composizione moduli non valida",
                 "errors": validation_result["errors"],
@@ -428,9 +484,9 @@ async def crea_template(
             "warnings": validation_result["warnings"]
         }
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Errore nella creazione del template: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Errore nella creazione del template: {str(e)}")
 
-@app.get("/templates/{template_id}", response_class=JSONResponse)
+@app.get("/templates/{template_id}", response_model=DocumentTemplateResponse)
 async def ottieni_template(
     template_id: str,
     user_id: str = Query(default="da2cb935-e023-40dd-9703-d918f1066b24", description="ID dell'utente"),
@@ -443,25 +499,10 @@ async def ottieni_template(
     template = template_service.get_template_by_id(template_id, user_id)
     
     if not template:
-        raise HTTPException(status_code=404, detail="Template non trovato")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template non trovato")
     
-    return {
-        "id": str(template.id),
-        "user_id": str(template.user_id),
-        "name": template.name,
-        "description": template.description,
-        "document_type": template.document_type,
-        "module_composition": template.module_composition,
-        "page_format": template.page_format,
-        "page_orientation": template.page_orientation,
-        "margins": template.margins,
-        "custom_styles": template.custom_styles,
-        "is_default": template.is_default,
-        "is_public": template.is_public,
-        "version": template.version,
-        "created_at": template.created_at.isoformat(),
-        "updated_at": template.updated_at.isoformat()
-    }
+    return DocumentTemplateResponse.from_orm(template) # from_orm per Pydantic V1
+    # Per Pydantic V2: return DocumentTemplateResponse.model_validate(template)
 
 @app.put("/templates/{template_id}", response_class=JSONResponse)
 async def aggiorna_template(
@@ -480,7 +521,7 @@ async def aggiorna_template(
         validation_result = template_service.validate_module_composition(template_data.module_composition)
         if not validation_result["valid"]:
             raise HTTPException(
-                status_code=400, 
+                status_code=status.HTTP_400_BAD_REQUEST, 
                 detail={
                     "message": "Composizione moduli non valida",
                     "errors": validation_result["errors"],
@@ -492,7 +533,7 @@ async def aggiorna_template(
         updated_template = template_service.update_template(template_id, user_id, template_data)
         
         if not updated_template:
-            raise HTTPException(status_code=404, detail="Template non trovato")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template non trovato")
         
         return {
             "message": "Template aggiornato con successo",
@@ -501,9 +542,9 @@ async def aggiorna_template(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Errore nell'aggiornamento del template: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Errore nell'aggiornamento del template: {str(e)}")
 
-@app.delete("/templates/{template_id}", response_class=JSONResponse)
+@app.delete("/templates/{template_id}", response_class=JSONResponse, status_code=status.HTTP_200_OK)
 async def elimina_template(
     template_id: str,
     user_id: str = Query(default="da2cb935-e023-40dd-9703-d918f1066b24", description="ID dell'utente"),
@@ -517,11 +558,11 @@ async def elimina_template(
     success = template_service.delete_template(template_id, user_id)
     
     if not success:
-        raise HTTPException(status_code=404, detail="Template non trovato")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template non trovato")
     
     return {"message": "Template eliminato con successo"}
 
-@app.get("/templates/default/{document_type}", response_class=JSONResponse)
+@app.get("/templates/default/{document_type}", response_model=DocumentTemplateResponse) # Aggiornato response_model
 async def ottieni_template_default(
     document_type: str,
     user_id: str = Query(default="da2cb935-e023-40dd-9703-d918f1066b24", description="ID dell'utente"),
@@ -537,17 +578,8 @@ async def ottieni_template_default(
         # Se non esiste un template default, crea uno di default
         template = template_service.create_default_template_for_user(user_id)
     
-    return {
-        "id": str(template.id),
-        "name": template.name,
-        "description": template.description,
-        "document_type": template.document_type,
-        "module_composition": template.module_composition,
-        "page_format": template.page_format,
-        "page_orientation": template.page_orientation,
-        "margins": template.margins,
-        "is_default": template.is_default
-    }
+    return DocumentTemplateResponse.from_orm(template) # from_orm per Pydantic V1
+    # Per Pydantic V2: return DocumentTemplateResponse.model_validate(template)
 
 @app.post("/templates/validate", response_class=JSONResponse)
 async def valida_composizione_moduli(
@@ -603,8 +635,8 @@ async def anteprima_preventivo_con_template(
         template_service = DocumentTemplateService(db)
         
         # Crea un oggetto template-like dalla configurazione
-        from .models import ModuleComposition, DocumentTemplateResponse
-        from datetime import datetime
+        # from .models import ModuleComposition, DocumentTemplateResponse # ModuleComposition non serve qui
+        # from datetime import datetime # Non serve qui
         
         # Simula un template con la configurazione fornita
         mock_template = type('MockTemplate', (), {
@@ -638,7 +670,7 @@ async def anteprima_preventivo_con_template(
             <p class="text-red-600 text-sm mt-1">{str(e)}</p>
         </div>
         """
-        return HTMLResponse(content=error_html, status_code=400)
+        return HTMLResponse(content=error_html, status_code=status.HTTP_400_BAD_REQUEST)
 
 # Esempio di come potresti avviare l'app con Uvicorn da riga di comando:
 # uvicorn app.main:app --reload

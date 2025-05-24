@@ -31,75 +31,48 @@ Sviluppare un'applicazione web per la generazione di documenti (inizialmente pre
 
 ---
 **STATO ATTUALE DELLO SVILUPPO (Aggiornare regolarmente):**
-*   **Data Ultimo Aggiornamento:** 2024-12-17 (LLM Integration Design Completato)
-*   **Fase Corrente:** Fase 2a - Template Documenti Personalizzabili - **COMPLETATA**
-*   **Step Attuale:** ✅ **Template Documenti Personalizzabili COMPLETATO** (include fix persistenza template_id e export PDF con template personalizzati)
-    *   ✅ **Backend core per preventivi pienamente funzionante** (dalla Fase 1)
-    *   ✅ Modelli Pydantic completi (`app/models.py`) integrati e funzionanti (dalla Fase 1)
-    *   ✅ Logica di calcolo totali/subtotali implementata (`app/services/preventivo_calculator.py`) (dalla Fase 1)
-    *   ✅ Template Jinja2 completamente funzionanti con numerazione righe corretta (dalla Fase 1)
-    *   ✅ Sistema di rendering HTML completo e testato (sia da POST che da DB) (dalla Fase 1)
-    *   ✅ Servizio preventivi con CRUD operations completo (`app/services/preventivo_service.py`) (dalla Fase 1)
-    *   ✅ **Frontend completo implementato** (dalla Fase 1):\
-        *   ✅ Dashboard interattiva con lista preventivi, filtri e ricerca
-        *   ✅ **Layout pagina creazione/modifica preventivo con sidebar per form e area documento full-page per anteprima live (UX migliorata)**
-        *   ✅ Form preventivi modulari con HTMX per interattività in tempo reale (campi indirizzo cliente separati)
-        *   ✅ Tabella voci preventivo (ora lista voci compatta nella sidebar) completamente interattiva (aggiungi/rimuovi/modifica)
-        *   ✅ Calcolo automatico totali in tempo reale
-        *   ✅ Anteprima live del documento durante la compilazione
-        *   ✅ **Sistema di salvataggio funzionante e robusto** (fix problemi tasto "salva bozza", validazione Pydantic indirizzi, serializzazione UUID)
-        *   ✅ Navigazione tra pagine completa
-        *   ✅ UI responsiva con Tailwind CSS
-        *   ✅ Sistema notifiche utente implementato
-        *   ✅ Debugging e risoluzione problemi interattività completato
-    *   ✅ **NUOVO: Sistema Template Unificato PDF/Web COMPLETATO**
-        *   ✅ **Problema Risolto**: Eliminato dual template system (`preventivo_documento.html` vs `preventivo_pdf.html`)
-        *   ✅ **Template Unificato**: Creato `preventivo_unificato.html` con CSS media queries (@media screen vs @media print)
-        *   ✅ **Identità Garantita**: Layout identico tra anteprima web e PDF generato
-        *   ✅ **Ottimizzazione A4**: Margini perfetti (1.2cm x 0.8cm), layout a 21cm per web, dimensioni font ottimizzate
-        *   ✅ **CSS Integrato**: Tutto il CSS incorporato nel template, eliminazione CSS service conflicts
-        *   ✅ **Servizio PDF Aggiornato**: `PDFExportService` refactored per usare template unificato
-        *   ✅ **Endpoint Unificati**: Entrambi `/preventivo/visualizza` e `/preventivo/pdf` usano stesso template
-        *   ✅ **Testing Completo**: Scripts `test_template_unificato.py`, `test_pdf_layout.py`, `test_confronto_layout.py`
-        *   ✅ **Risoluzione Issues**: Fix CSS type hints, Jinja2 filter `strftime`, WeasyPrint configuration
-        *   ✅ **Performance**: PDF ~22-25KB, no content overflow, perfect A4 compliance
-    *   ✅ **Export PDF con WeasyPrint completato e ottimizzato**
-        *   ✅ Servizio `PDFExportService` implementato e refactored (`app/services/pdf_export_service.py`)
-        *   ✅ ~~Template HTML dedicato `preventivo_pdf.html` con CSS ottimizzato per A4~~ → **Sostituito con template unificato**
-        *   ✅ Endpoint API: `POST /preventivo/pdf` e `GET /preventivo/{id}/pdf`
-        *   ✅ Integrazione UI nella dashboard e nel form preventivo per scaricare PDF
-        *   ✅ Script di test `test_pdf.py` e `quick_pdf_test.py` creati e funzionanti
-        *   ✅ Documentazione `README_PDF_EXPORT.md` creata
-        *   ✅ **WeasyPrint completamente configurato**: Dipendenze sistema installate, variabili d'ambiente configurate
-        *   ✅ **Script di avvio `start_server.sh`**: Automatizza configurazione WeasyPrint e avvio server
-        *   ✅ **Test endpoint funzionanti**: PDF generati correttamente con template unificato
-    *   ✅ **Migrazione a PostgreSQL COMPLETATA**
-        *   ✅ **Configurazione Ambiente**: File `.env` configurato con DATABASE_URL PostgreSQL
-        *   ✅ **Database Layer**: `app/database.py` aggiornato per PostgreSQL con fallback SQLite e avvertimenti
-        *   ✅ **Modelli Dati**: `app/db_models.py` aggiornato con tipi PostgreSQL nativi (UUID, JSONB, lunghezze stringhe)
-        *   ✅ **Dipendenze**: `requirements.txt` verificato - tutte le dipendenze PostgreSQL presenti
-        *   ✅ **Migrations Setup**: Alembic inizializzato e configurato (`alembic.ini`, `alembic/env.py`)
-        *   ✅ **Configurazione Test**: Verificato che modelli PostgreSQL non siano compatibili con SQLite (comportamento atteso)
-        *   ✅ **Documentazione**: Creata guida completa `MIGRAZIONE_POSTGRESQL.md` con status tracking
-        *   ✅ **Database Operativo**: Istanza PostgreSQL configurata e funzionante
-        *   ✅ **Prima Migrazione**: Schema database inizializzato correttamente con Alembic
-    *   ✅ **NUOVO: Design Integrazione LLM COMPLETATO**
-        *   ✅ **Documento Operativo**: Creato `LLM_INTEGRATION_DESIGN.md` completo e dettagliato
-        *   ✅ **Analisi Architetturale**: Mappatura completa sistema esistente e gap per LLM
-        *   ✅ **Componenti Core Definiti**: 
-            - Sistema Template Documenti Personalizzabili (drag & drop, formati multipli)
-            - Creazione Moduli Personalizzati tramite LLM (generazione Jinja2 + JSON Schema)
-            - Agente LLM Contestuale (intent classification, context management)
-        *   ✅ **Modello Dati Esteso**: Progettazione nuove tabelle (`document_templates`, `custom_modules`, `user_preferences`, `llm_conversations`)
-        *   ✅ **Strategie Prompting**: Template prompt dettagliati per ogni caso d'uso LLM
-        *   ✅ **Flussi UI/UX**: Definizione completa interfacce utente e user journey
-        *   ✅ **Roadmap Implementazione**: Piano di sviluppo graduale (Fasi 2a, 2b, 2c, 3) con timeline dettagliato
-        *   ✅ **Risk Assessment**: Identificazione rischi tecnici, UX e business con relative mitigazioni
-        *   ✅ **Architettura LLM-Ready**: Conferma che sistema attuale si presta perfettamente all'evoluzione LLM
-*   **Repository e Documentazione**:\
-        *   ✅ Versioning Git inizializzato e configurato
-        *   ✅ Documentazione completa migrazione PostgreSQL
-        *   ✅ **Documentazione integrazione LLM completa e operativa**
+*   **Data Ultimo Aggiornamento:** 2024-12-18 (Sistema Cestino e Bugfix Dashboard)
+*   **Fase Corrente:** Fase 2a - Template Documenti Personalizzabili - **COMPLETATA** (con aggiunte QoL)
+*   **Step Attuale:** ✅ **Sistema Cestino per Preventivi COMPLETATO** (Qualità della Vita)
+    *   ✅ **Backend per Soft-Delete Preventivi:**
+        *   Aggiunto campo `stato_record` ("attivo", "cestinato") e `cestinato_il` (timestamp) alla tabella `preventivi`.
+        *   Migrazione Alembic `5546c88458bf_add_soft_delete_to_preventivi.py` creata e applicata.
+        *   Modifiche a `app/services/preventivo_service.py`:
+            *   `lista_preventivi_attivi()`: Ora filtra per `stato_record="attivo"`.
+            *   `lista_preventivi_cestinati()`: Nuovo metodo per elencare preventivi con `stato_record="cestinato"`.
+            *   `cestina_preventivo()`: Implementa soft delete (imposta `stato_record="cestinato"`, `cestinato_il=now`).
+            *   `ripristina_preventivo()`: Ripristina un preventivo da cestinato ad attivo.
+            *   `elimina_definitivamente_preventivo()`: Eliminazione fisica dal DB (per preventivi nel cestino o per pulizia).
+            *   `svuota_cestino_scaduti()`: Mantenuto per possibile futura pulizia automatica (es. dopo 30gg).
+            *   **NUOVO**: `svuota_tutto_cestino()`: Elimina tutti i preventivi con `stato_record="cestinato"` per un utente.
+        *   Modifiche agli endpoint API in `app/main.py`:
+            *   `GET /preventivi/attivi`: Nuovo endpoint per listare solo preventivi attivi.
+            *   `GET /preventivi/cestinati`: Nuovo endpoint per listare preventivi cestinati.
+            *   `POST /preventivo/{id}/cestina`: Endpoint per spostare un preventivo nel cestino.
+            *   `POST /preventivo/{id}/ripristina`: Endpoint per ripristinare un preventivo dal cestino.
+            *   `DELETE /preventivo/{id}/definitivo`: Endpoint per l'eliminazione definitiva.
+            *   `POST /preventivi/cestino/svuota_scaduti`: Endpoint esistente per la pulizia scaduti.
+            *   **NUOVO**: `POST /preventivi/cestino/svuota_tutto`: Endpoint per svuotare completamente il cestino.
+        *   Modello Pydantic `PreventivoListItem` aggiornato (se necessario) per includere nuovi campi e spostato in `app/models.py`.
+    *   ✅ **Frontend per Gestione Cestino in Dashboard** (`app/templates/dashboard.html`):
+        *   Logica Alpine.js (`dashboardData()`):
+            *   Aggiunta proprietà `currentView` ('attivi' o 'cestinati').
+            *   `loadPreventivi()` aggiornato per chiamare `/preventivi/attivi` o `/preventivi/cestinati` in base a `currentView`.
+            *   `switchView()` per cambiare tra vista attivi e cestino.
+            *   Nuove funzioni: `cestinaPreventivo()`, `ripristinaPreventivo()`, `eliminaDefinitivamentePreventivo()`.
+            *   **MODIFICATA**: Funzione `svuotaCestinoScaduti()` rinominata in `svuotaTuttoCestino()` e collegata al nuovo endpoint `/preventivi/cestino/svuota_tutto`.
+        *   Modifiche al template HTML:
+            *   Aggiunti tab/pulsanti per switchare tra vista "Preventivi Attivi" e "Cestino".
+            *   Titoli e descrizioni della pagina dinamici in base alla vista.
+            *   Pulsante "Nuovo Preventivo" visibile solo nella vista "attivi".
+            *   Statistiche (cards) adattate per mostrare "Elementi nel Cestino" quando `currentView === 'cestinati'`.
+            *   Pulsante "Svuota Tutto il Cestino" visibile solo nella vista "cestinati" e aggiornato nel testo e funzionalità.
+            *   Azioni per riga preventivo condizionali:
+                *   Vista "attivi": Visualizza, Modifica, PDF, Cestina.
+                *   Vista "cestinati": Ripristina, Elimina Definitivamente.
+            *   Label colonne tabella (es. "Data Creazione" vs "Data Cestinamento") e messaggi "empty state" dinamici.
+            *   **BUGFIX**: Corretto errore di sintassi HTML nel file `dashboard.html` (commento mal posizionato che rompeva `x-show`).
+    *   ✅ **Design Integrazione LLM COMPLETATO**
 *   **Prossimi Passi Immediati - Fase 2a: Template Documenti Personalizzabili (4-6 settimane):**
     1.  ✅ **Export PDF**: Integrazione WeasyPrint per generazione PDF - **COMPLETATO**
     2.  ✅ **Template Unificato PDF/Web** - **COMPLETATO**
@@ -121,7 +94,8 @@ Sviluppare un'applicazione web per la generazione di documenti (inizialmente pre
             - [X] Test con vari tipi documento
             - [X] Ottimizzazione performance rendering
             - [X] UI/UX improvements
-    6.  **Fasi Successive**: Integrazione LLM Base (Fase 2b), Module Creation LLM (Fase 2c), Agente LLM Avanzato (Fase 3)
+    6.  ✅ **NUOVO: Sistema Cestino per Preventivi (Qualità della Vita)** - **COMPLETATO** (Implementato durante e post Fase 2a)
+    7.  **Fasi Successive**: Implementazione Sistema Cartelle (Qualità della Vita), Integrazione LLM Base (Fase 2b), Module Creation LLM (Fase 2c), Agente LLM Avanzato (Fase 3)
 *   **Bloccanti / Domande Aperte:**
     *   **Nessun bloccante critico**: Tutte le fondamenta sono pronte per l'evoluzione LLM
     *   **Decisioni Architetturali**: Già definite nel documento di design LLM
@@ -144,7 +118,7 @@ Sviluppare un'applicazione web per la generazione di documenti (inizialmente pre
 2.  **Riferimento Iniziale:** Quando inizi una sessione di chat con l'agent di Cursor, potresti dire qualcosa come: "Sto lavorando al progetto descritto nel file `PROJECT_CONTEXT.md` (o all'inizio di `main.py`). Puoi prenderlo come riferimento principale? Attualmente siamo [descrivi brevemente lo step attuale]."
 3.  **Aggiornamenti:** Dopo aver completato una parte significativa, chiedi all'agent: "Abbiamo appena completato [descrizione task]. Puoi aiutarmi ad aggiornare la sezione 'STATO ATTUALE DELLO SVILUPPO' nel nostro documento di contesto?" o fallo direttamente tu.
 
-Questo documento dettaglia lo sviluppo di un'applicazione web per la generazione di documenti modulari, con un focus iniziale sulla creazione di un sistema manuale pienamente funzionante (MVP). L'architettura di questo MVP, in particolare la gestione dei dati tramite JSON modulari e il rendering tramite template Jinja2, è specificamente progettata per consentire una successiva integrazione "plug and play" di Large Language Models (LLM) per automatizzare l'inserimento dati e offrire funzionalità avanzate. L'obiettivo primario dell'MVP è la gestione di preventivi.
+Questo documento dettaglia lo sviluppo di un'applicazione web per la generazione di documenti modulari, con un focus iniziale sulla creazione di un sistema manuale pienamente funzionante (MVP). L'architettura di questo MVP, in particolare la gestione dei dati tramite JSON modulari e il rendering tramite template Jinja2, è specificamente progettata per consentire una successiva integrazione "plug and play" degli LLM, dove l'LLM genererà i JSON modulari al posto dell'input manuale. L'obiettivo primario dell'MVP è la gestione di preventivi.
 Indice:
 Introduzione e Scopo del Progetto (con Enfasi MVP)
 Visione del Prodotto e Flusso Utente (Distinzione tra MVP Manuale e Visione Finale LLM)

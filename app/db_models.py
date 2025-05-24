@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.ext.hybrid import hybrid_property
 import uuid
 from datetime import datetime
 from .database import Base
@@ -69,6 +70,10 @@ class Preventivo(Base):
     # Usa JSONB per performance e capacità di query avanzate su PostgreSQL
     dati_preventivo = Column(JSONB, nullable=False)
     
+    # Campi per la gestione del cestino
+    stato_record = Column(String(50), default="attivo", index=True)  # es: "attivo", "cestinato"
+    cestinato_il = Column(DateTime, nullable=True, index=True)
+    
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -76,6 +81,18 @@ class Preventivo(Base):
     # Relazioni
     utente = relationship("User", back_populates="preventivi")
     template = relationship("DocumentTemplate", back_populates="documents")
+
+    @hybrid_property
+    def nome_cliente(self):
+        if self.dati_preventivo and isinstance(self.dati_preventivo, dict):
+            return self.dati_preventivo.get('cliente_destinatario', {}).get('nome_cliente')
+        return None
+
+    @hybrid_property
+    def valore_totale_lordo(self):
+        if self.dati_preventivo and isinstance(self.dati_preventivo, dict):
+            return self.dati_preventivo.get('dettagli_totali', {}).get('totale_generale_lordo')
+        return None
 
 class DocumentTemplate(Base):
     __tablename__ = "document_templates"

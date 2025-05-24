@@ -86,6 +86,22 @@ class PreventivoMasterModel(BaseModel):
     dettagli_totali: SezioneTotali
     elementi_footer: Optional[FooterPreventivo] = None
 
+# Modello per la visualizzazione sintetica dei preventivi in una lista
+class PreventivoListItem(BaseModel):
+    id: UUID
+    numero_preventivo: str
+    oggetto_preventivo: str
+    stato_preventivo: str # Lo stato funzionale (bozza, inviato, etc.)
+    stato_record: Optional[str] = None # Lo stato del record (attivo, cestinato)
+    nome_cliente: Optional[str] = None
+    valore_totale_lordo: Optional[float] = None
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
+    cestinato_il: Optional[datetime.datetime] = None
+
+    class Config:
+        from_attributes = True # Per Pydantic V2 (sostituisce orm_mode)
+
 # ============================================
 # TEMPLATE DOCUMENTI E PREFERENZE UTENTE
 # ============================================

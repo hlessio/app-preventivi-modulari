@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 # from uuid import UUID # Rimuoviamo l'import UUID
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta # Aggiunto timedelta
 
 from ..db_models import Preventivo, User, Azienda
 from ..models import PreventivoMasterModel, IntestazioneAzienda, Indirizzo
@@ -15,6 +15,7 @@ class PreventivoService:
     def salva_preventivo(self, preventivo_data: PreventivoMasterModel, user_id: str) -> Preventivo: # Cambiato da UUID a str
         """
         Salva un nuovo preventivo nel database.
+        I nuovi preventivi sono sempre 'attivi'.
         """
         # Converti il modello Pydantic in dizionario per salvarlo come JSON
         preventivo_json = preventivo_data.model_dump(mode='json')
@@ -25,7 +26,8 @@ class PreventivoService:
             numero_preventivo=preventivo_data.metadati_preventivo.numero_preventivo,
             oggetto_preventivo=preventivo_data.metadati_preventivo.oggetto_preventivo,
             stato_preventivo=preventivo_data.metadati_preventivo.stato_preventivo,
-            dati_preventivo=preventivo_json
+            dati_preventivo=preventivo_json,
+            stato_record="attivo"  # Default per nuovi preventivi
         )
         
         self.db.add(db_preventivo)
@@ -37,11 +39,13 @@ class PreventivoService:
     def aggiorna_preventivo(self, preventivo_id: str, preventivo_data: PreventivoMasterModel, user_id: str) -> Optional[Preventivo]: # Cambiato da UUID a str
         """
         Aggiorna un preventivo esistente.
+        Solo i preventivi attivi possono essere aggiornati tramite questo metodo.
         """
-        # Trova il preventivo
+        # Trova il preventivo attivo
         db_preventivo = self.db.query(Preventivo).filter(
             Preventivo.id == preventivo_id,
-            Preventivo.user_id == user_id
+            Preventivo.user_id == user_id,
+            Preventivo.stato_record == "attivo" # Aggiunto filtro per stato_record
         ).first()
         
         if not db_preventivo:
@@ -60,14 +64,19 @@ class PreventivoService:
         
         return db_preventivo
     
-    def carica_preventivo(self, preventivo_id: str, user_id: str) -> Optional[PreventivoMasterModel]: # Cambiato da UUID a str
+    def carica_preventivo(self, preventivo_id: str, user_id: str, solo_attivi: bool = True) -> Optional[PreventivoMasterModel]: # Cambiato da UUID a str
         """
         Carica un preventivo dal database e lo converte in PreventivoMasterModel.
+        Di default carica solo preventivi attivi, ma può caricarli anche se cestinati se solo_attivi=False.
         """
-        db_preventivo = self.db.query(Preventivo).filter(
+        query = self.db.query(Preventivo).filter(
             Preventivo.id == preventivo_id,
             Preventivo.user_id == user_id
-        ).first()
+        )
+        if solo_attivi:
+            query = query.filter(Preventivo.stato_record == "attivo")
+        
+        db_preventivo = query.first()
         
         if not db_preventivo:
             return None
@@ -75,27 +84,83 @@ class PreventivoService:
         # Converte il JSON in PreventivoMasterModel
         try:
             preventivo_model = PreventivoMasterModel(**db_preventivo.dati_preventivo)
+            # Potremmo voler arricchire il modello con lo stato_record se necessario al chiamante
             return preventivo_model
         except Exception as e:
             # Log dell'errore
             print(f"Errore nella deserializzazione del preventivo {preventivo_id}: {e}")
             return None
     
-    def lista_preventivi(self, user_id: str, skip: int = 0, limit: int = 100) -> List[Preventivo]: # Cambiato da UUID a str
+    def lista_preventivi_attivi(self, user_id: str, skip: int = 0, limit: int = 100) -> List[Preventivo]:
         """
-        Restituisce la lista dei preventivi per un utente.
+        Restituisce la lista dei preventivi attivi per un utente.
         """
         return self.db.query(Preventivo).filter(
-            Preventivo.user_id == user_id
-        ).offset(skip).limit(limit).all()
-    
-    def elimina_preventivo(self, preventivo_id: str, user_id: str) -> bool: # Cambiato da UUID a str
+            Preventivo.user_id == user_id,
+            Preventivo.stato_record == "attivo"
+        ).order_by(Preventivo.updated_at.desc()).offset(skip).limit(limit).all()
+
+    def lista_preventivi_cestinati(self, user_id: str, skip: int = 0, limit: int = 100) -> List[Preventivo]:
         """
-        Elimina un preventivo.
+        Restituisce la lista dei preventivi cestinati per un utente.
+        """
+        return self.db.query(Preventivo).filter(
+            Preventivo.user_id == user_id,
+            Preventivo.stato_record == "cestinato"
+        ).order_by(Preventivo.cestinato_il.desc()).offset(skip).limit(limit).all()
+
+    def cestina_preventivo(self, preventivo_id: str, user_id: str) -> Optional[Preventivo]:
+        """
+        Sposta un preventivo nel cestino (soft delete).
+        """
+        db_preventivo = self.db.query(Preventivo).filter(
+            Preventivo.id == preventivo_id,
+            Preventivo.user_id == user_id,
+            Preventivo.stato_record == "attivo" # Solo i preventivi attivi possono essere cestinati
+        ).first()
+        
+        if not db_preventivo:
+            return None # O solleva un'eccezione
+        
+        db_preventivo.stato_record = "cestinato"
+        db_preventivo.cestinato_il = datetime.utcnow()
+        db_preventivo.updated_at = datetime.utcnow()
+        
+        self.db.commit()
+        self.db.refresh(db_preventivo)
+        return db_preventivo
+
+    def ripristina_preventivo(self, preventivo_id: str, user_id: str) -> Optional[Preventivo]:
+        """
+        Ripristina un preventivo dal cestino.
+        """
+        db_preventivo = self.db.query(Preventivo).filter(
+            Preventivo.id == preventivo_id,
+            Preventivo.user_id == user_id,
+            Preventivo.stato_record == "cestinato" # Solo i preventivi cestinati possono essere ripristinati
+        ).first()
+        
+        if not db_preventivo:
+            return None # O solleva un'eccezione
+        
+        db_preventivo.stato_record = "attivo"
+        db_preventivo.cestinato_il = None
+        db_preventivo.updated_at = datetime.utcnow()
+        
+        self.db.commit()
+        self.db.refresh(db_preventivo)
+        return db_preventivo
+
+    def elimina_definitivamente_preventivo(self, preventivo_id: str, user_id: str) -> bool:
+        """
+        Elimina definitivamente un preventivo dal database.
+        Tipicamente usato per preventivi già nel cestino.
         """
         db_preventivo = self.db.query(Preventivo).filter(
             Preventivo.id == preventivo_id,
             Preventivo.user_id == user_id
+            # Considerare se permettere l'eliminazione definitiva solo se 'cestinato'
+            # Preventivo.stato_record == "cestinato" 
         ).first()
         
         if not db_preventivo:
@@ -105,7 +170,61 @@ class PreventivoService:
         self.db.commit()
         
         return True
-    
+
+    def svuota_cestino_scaduti(self, user_id: Optional[str] = None, giorni_scadenza: int = 30) -> int:
+        """
+        Elimina definitivamente i preventivi cestinati da più di 'giorni_scadenza'.
+        Se user_id è fornito, opera solo per quell'utente.
+        Altrimenti (con cautela!), potrebbe operare globalmente (richiede privilegi admin non implementati qui).
+        Restituisce il numero di preventivi eliminati.
+        """
+        cutoff_date = datetime.utcnow() - timedelta(days=giorni_scadenza)
+        query = self.db.query(Preventivo).filter(
+            Preventivo.stato_record == "cestinato",
+            Preventivo.cestinato_il <= cutoff_date
+        )
+        
+        if user_id:
+            query = query.filter(Preventivo.user_id == user_id)
+        else:
+            # Qui si potrebbe inserire un controllo per ruolo admin se si volesse un cleanup globale
+            # Per ora, se user_id non è fornito, non fa nulla per sicurezza.
+            # O, si potrebbe decidere che questa funzione è sempre per utente.
+            # In un sistema multi-tenant reale, il cleanup globale sarebbe più complesso.
+            print("Attenzione: user_id non fornito per svuota_cestino_scaduti. Nessuna operazione globale eseguita per sicurezza.")
+            return 0
+
+
+        preventivi_da_eliminare = query.all()
+        count = len(preventivi_da_eliminare)
+        
+        if count > 0:
+            for preventivo in preventivi_da_eliminare:
+                self.db.delete(preventivo)
+            self.db.commit()
+            
+        return count
+
+    def svuota_tutto_cestino(self, user_id: str) -> int:
+        """
+        Elimina definitivamente TUTTI i preventivi nel cestino per un utente.
+        Restituisce il numero di preventivi eliminati.
+        """
+        query = self.db.query(Preventivo).filter(
+            Preventivo.user_id == user_id,
+            Preventivo.stato_record == "cestinato"
+        )
+        
+        preventivi_da_eliminare = query.all()
+        count = len(preventivi_da_eliminare)
+        
+        if count > 0:
+            for preventivo in preventivi_da_eliminare:
+                self.db.delete(preventivo)
+            self.db.commit()
+            
+        return count
+
     def get_dati_azienda_utente(self, user_id: str) -> Optional[IntestazioneAzienda]: # Cambiato da UUID a str
         """
         Recupera i dati dell'azienda per un utente e li converte in IntestazioneAzienda.
