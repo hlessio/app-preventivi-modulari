@@ -31,47 +31,29 @@ Sviluppare un'applicazione web per la generazione di documenti (inizialmente pre
 
 ---
 **STATO ATTUALE DELLO SVILUPPO (Aggiornare regolarmente):**
-*   **Data Ultimo Aggiornamento:** 2024-12-18 (Sistema Cestino e Bugfix Dashboard)
-*   **Fase Corrente:** Fase 2a - Template Documenti Personalizzabili - **COMPLETATA** (con aggiunte QoL)
-*   **Step Attuale:** ✅ **Sistema Cestino per Preventivi COMPLETATO** (Qualità della Vita)
-    *   ✅ **Backend per Soft-Delete Preventivi:**
-        *   Aggiunto campo `stato_record` ("attivo", "cestinato") e `cestinato_il` (timestamp) alla tabella `preventivi`.
-        *   Migrazione Alembic `5546c88458bf_add_soft_delete_to_preventivi.py` creata e applicata.
-        *   Modifiche a `app/services/preventivo_service.py`:
-            *   `lista_preventivi_attivi()`: Ora filtra per `stato_record="attivo"`.
-            *   `lista_preventivi_cestinati()`: Nuovo metodo per elencare preventivi con `stato_record="cestinato"`.
-            *   `cestina_preventivo()`: Implementa soft delete (imposta `stato_record="cestinato"`, `cestinato_il=now`).
-            *   `ripristina_preventivo()`: Ripristina un preventivo da cestinato ad attivo.
-            *   `elimina_definitivamente_preventivo()`: Eliminazione fisica dal DB (per preventivi nel cestino o per pulizia).
-            *   `svuota_cestino_scaduti()`: Mantenuto per possibile futura pulizia automatica (es. dopo 30gg).
-            *   **NUOVO**: `svuota_tutto_cestino()`: Elimina tutti i preventivi con `stato_record="cestinato"` per un utente.
-        *   Modifiche agli endpoint API in `app/main.py`:
-            *   `GET /preventivi/attivi`: Nuovo endpoint per listare solo preventivi attivi.
-            *   `GET /preventivi/cestinati`: Nuovo endpoint per listare preventivi cestinati.
-            *   `POST /preventivo/{id}/cestina`: Endpoint per spostare un preventivo nel cestino.
-            *   `POST /preventivo/{id}/ripristina`: Endpoint per ripristinare un preventivo dal cestino.
-            *   `DELETE /preventivo/{id}/definitivo`: Endpoint per l'eliminazione definitiva.
-            *   `POST /preventivi/cestino/svuota_scaduti`: Endpoint esistente per la pulizia scaduti.
-            *   **NUOVO**: `POST /preventivi/cestino/svuota_tutto`: Endpoint per svuotare completamente il cestino.
-        *   Modello Pydantic `PreventivoListItem` aggiornato (se necessario) per includere nuovi campi e spostato in `app/models.py`.
-    *   ✅ **Frontend per Gestione Cestino in Dashboard** (`app/templates/dashboard.html`):
-        *   Logica Alpine.js (`dashboardData()`):
-            *   Aggiunta proprietà `currentView` ('attivi' o 'cestinati').
-            *   `loadPreventivi()` aggiornato per chiamare `/preventivi/attivi` o `/preventivi/cestinati` in base a `currentView`.
-            *   `switchView()` per cambiare tra vista attivi e cestino.
-            *   Nuove funzioni: `cestinaPreventivo()`, `ripristinaPreventivo()`, `eliminaDefinitivamentePreventivo()`.
-            *   **MODIFICATA**: Funzione `svuotaCestinoScaduti()` rinominata in `svuotaTuttoCestino()` e collegata al nuovo endpoint `/preventivi/cestino/svuota_tutto`.
-        *   Modifiche al template HTML:
-            *   Aggiunti tab/pulsanti per switchare tra vista "Preventivi Attivi" e "Cestino".
-            *   Titoli e descrizioni della pagina dinamici in base alla vista.
-            *   Pulsante "Nuovo Preventivo" visibile solo nella vista "attivi".
-            *   Statistiche (cards) adattate per mostrare "Elementi nel Cestino" quando `currentView === 'cestinati'`.
-            *   Pulsante "Svuota Tutto il Cestino" visibile solo nella vista "cestinati" e aggiornato nel testo e funzionalità.
-            *   Azioni per riga preventivo condizionali:
-                *   Vista "attivi": Visualizza, Modifica, PDF, Cestina.
-                *   Vista "cestinati": Ripristina, Elimina Definitivamente.
-            *   Label colonne tabella (es. "Data Creazione" vs "Data Cestinamento") e messaggi "empty state" dinamici.
-            *   **BUGFIX**: Corretto errore di sintassi HTML nel file `dashboard.html` (commento mal posizionato che rompeva `x-show`).
+*   **Data Ultimo Aggiornamento:** 2024-07-27 (Refactoring Layout Form Preventivo)
+*   **Fase Corrente:** Miglioramenti Qualità della Vita (Post Fase 2a)
+*   **Step Attuale:** ✅ **Refactoring Layout Form Preventivo COMPLETATO**
+    *   ✅ **Interfaccia Full-Width:**
+        *   Il form di creazione/modifica preventivo ora utilizza l'intera larghezza del browser.
+        *   Rimossa la limitazione `max-w-7xl` e i margini laterali per la pagina del preventivo.
+        *   Modificato `base.html` per includere un blocco `{% block header %}` e consentire la sua sovrascrittura.
+        *   Modificato `preventivo_form.html` per utilizzare `{% block main_layout %}` e sovrascrivere `{% block header %}` per un header personalizzato e focalizzato.
+    *   ✅ **Sidebar Controlli Fissa e Ottimizzata:**
+        *   La sidebar con i controlli del form ha una larghezza fissa di `320px`.
+        *   Tutti i campi del form sono stati resi più compatti per una migliore usabilità.
+        *   Aggiunte scrollbar personalizzate per la sidebar.
+    *   ✅ **Anteprima Documento Full-Page:**
+        *   L'area di anteprima del documento occupa dinamicamente tutto lo spazio rimanente.
+        *   Corretti gli stili del template `preventivo_unificato.html` per rimuovere le limitazioni di larghezza (es. formato A4) nella visualizzazione web, permettendo all'anteprima di espandersi correttamente.
+    *   ✅ **Header Form Preventivo Ottimizzato:**
+        *   L'header nella pagina di modifica/creazione preventivo è stato ridisegnato per essere più compatto e focalizzato.
+        *   Include ora un'icona dell'app, il titolo "Modifica/Nuovo Preventivo", e il numero del preventivo.
+        *   Rimosso il pulsante "Nuovo Preventivo" e il link "Dashboard" ridondanti in questa vista.
+*   **Precedenti Step Completati:**
+    *   ✅ **Sistema Cestino per Preventivi COMPLETATO** (Qualità della Vita)
+        *   ✅ Backend per Soft-Delete Preventivi (campi `stato_record`, `cestinato_il`, servizi e API aggiornate).
+        *   ✅ Frontend per Gestione Cestino in Dashboard (logica Alpine.js, viste condizionali, azioni specifiche).
     *   ✅ **Design Integrazione LLM COMPLETATO**
 *   **Prossimi Passi Immediati - Fase 2a: Template Documenti Personalizzabili (4-6 settimane):**
     1.  ✅ **Export PDF**: Integrazione WeasyPrint per generazione PDF - **COMPLETATO**

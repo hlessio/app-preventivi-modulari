@@ -2,6 +2,10 @@
 
 {% block title %}{% if preventivo_id %}Modifica{% else %}Nuovo{% endif %} Preventivo - App Preventivi{% endblock %}
 
+{% block header %}
+<!-- Header personalizzato disabilitato - usiamo quello nel main_layout -->
+{% endblock %}
+
 {% block extra_head %}
 <style>
     .form-section {
@@ -20,202 +24,230 @@
         background: white;
         border-bottom: 1px solid #e5e7eb;
     }
+    .sidebar-form {
+        /* Custom scrollbar */
+        scrollbar-width: thin;
+        scrollbar-color: #d1d5db #f9fafb;
+    }
+    .sidebar-form::-webkit-scrollbar {
+        width: 6px;
+    }
+    .sidebar-form::-webkit-scrollbar-track {
+        background: #f9fafb;
+    }
+    .sidebar-form::-webkit-scrollbar-thumb {
+        background: #d1d5db;
+        border-radius: 3px;
+    }
+    .sidebar-form::-webkit-scrollbar-thumb:hover {
+        background: #9ca3af;
+    }
+    .documento-area {
+        /* Documento area styling */
+        box-shadow: -4px 0 8px rgba(0, 0, 0, 0.05);
+    }
+    .form-input-sm {
+        @apply text-xs py-1.5 px-2;
+    }
+    /* Override del layout base per usare tutta la larghezza */
+    .preventivo-fullwidth {
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
 </style>
 {% endblock %}
 
-{% block content %}
-<div x-data="preventivoForm()" class="flex flex-col h-screen">
-    <!-- Header con Azioni -->
-    <div class="sticky-header bg-white -mx-4 px-4 py-4 border-b z-10">
-        <div class="flex items-center justify-between max-w-7xl mx-auto">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900">
-                    {% if preventivo_id %}
-                        Modifica Preventivo
-                    {% else %}
-                        Nuovo Preventivo
-                    {% endif %}
-                </h1>
-                <p class="text-sm text-gray-500 mt-1">
-                    <span x-show="formData.numero_preventivo" x-text="`Numero: ${formData.numero_preventivo}`"></span>
-                    <span x-show="!formData.numero_preventivo">Compilare i campi per creare il preventivo</span>
-                </p>
+{% block main_layout %}
+<!-- Layout full-width per i preventivi -->
+<div x-data="preventivoForm()" class="flex flex-col h-screen bg-gray-50">
+    <!-- Header con Azioni - Full Width -->
+    <div class="sticky-header bg-white px-6 py-3 border-b z-10 shadow-sm">
+        <div class="flex items-center justify-between w-full">
+            <div class="flex items-center space-x-4 flex-1 min-w-0">
+                <!-- Logo e titolo app -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-file-invoice text-white text-sm"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h1 class="text-lg font-bold text-gray-900 truncate">
+                            {% if preventivo_id %}
+                                Modifica Preventivo
+                            {% else %}
+                                Nuovo Preventivo
+                            {% endif %}
+                        </h1>
+                        <p class="text-xs text-gray-500 truncate">
+                            <span x-show="formData.numero_preventivo" x-text="`${formData.numero_preventivo}`"></span>
+                            <span x-show="!formData.numero_preventivo">Compilare i campi per creare il preventivo</span>
+                        </p>
+                    </div>
+                </div>
             </div>
             
-            <!-- Azioni -->
-            <div class="flex items-center space-x-3">
+            <!-- Azioni compatte -->
+            <div class="flex items-center space-x-2 ml-4">
                 <!-- Stato -->
                 <select x-model="formData.stato_preventivo" 
-                        class="rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500">
+                        class="rounded-md border-gray-300 text-xs focus:border-blue-500 focus:ring-blue-500 py-1 px-2">
                     <option value="bozza">Bozza</option>
                     <option value="inviato">Inviato</option>
                     <option value="approvato">Approvato</option>
                     <option value="rifiutato">Rifiutato</option>
                 </select>
 
-                <!-- Pulsanti -->
+                <!-- Pulsanti compatti -->
                 <button x-on:click="salvaPreventivo('bozza')" 
                         :disabled="salvando"
-                        class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50">
-                    <i class="fas fa-save mr-2" :class="{'fa-spin': salvando}"></i>
-                    <span x-text="salvando ? 'Salvando...' : 'Salva Bozza'"></span>
+                        class="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50">
+                    <i class="fas fa-save mr-1.5" :class="{'fa-spin': salvando}"></i>
+                    <span x-text="salvando ? 'Salvando...' : 'Salva'"></span>
                 </button>
                 
                 <button x-on:click="anteprimaPreventivo()" 
-                        class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                    <i class="fas fa-eye mr-2"></i>
+                        class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <i class="fas fa-eye mr-1.5"></i>
                     Anteprima
                 </button>
 
                 <button x-on:click="scaricaPdf()" 
-                        class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
-                    <i class="fas fa-file-pdf mr-2"></i>
-                    Scarica PDF
+                        class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
+                    <i class="fas fa-file-pdf mr-1.5"></i>
+                    PDF
                 </button>
 
                 <a href="/" 
-                   class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                    <i class="fas fa-arrow-left mr-2"></i>
-                    Torna alla Dashboard
+                   class="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    <i class="fas fa-arrow-left mr-1.5"></i>
+                    Dashboard
                 </a>
             </div>
         </div>
     </div>
 
     <div class="flex flex-grow overflow-hidden">
-        <!-- Sidebar Sinistra: Controlli Form -->
-        <div class="w-1/3 bg-gray-50 border-r border-gray-200 overflow-y-auto">
-            <div class="p-6 space-y-6">
-                <!-- 1. Dati Azienda (Read-only, precaricati) -->
-                <div class="form-section bg-white rounded-lg shadow border border-gray-200 p-6">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">
-                        <i class="fas fa-building text-blue-600 mr-2"></i>
+        <!-- Sidebar Sinistra: Controlli Form - Larghezza fissa ottimale -->
+        <div class="w-80 flex-shrink-0 bg-white border-r border-gray-200 sidebar-form overflow-y-auto">
+            <div class="p-4 space-y-4">
+                
+                <!-- 1. Dati Azienda (Read-only, precaricati) - Compatto -->
+                <div class="form-section bg-gray-50 rounded-lg border border-gray-200 p-3">
+                    <h3 class="text-sm font-semibold text-gray-900 mb-2 flex items-center">
+                        <i class="fas fa-building text-blue-600 mr-2 text-xs"></i>
                         Dati Azienda
                     </h3>
-                    <div class="bg-gray-50 rounded-md p-4">
-                        <div class="grid grid-cols-1 gap-4 text-sm">
-                            <div>
-                                <span class="font-medium text-gray-700">Ragione Sociale:</span>
-                                <div x-text="formData.intestazione_azienda.ragione_sociale || 'La Tua Azienda S.r.l.'"></div>
-                            </div>
-                            <div>
-                                <span class="font-medium text-gray-700">P.IVA:</span>
-                                <div x-text="formData.intestazione_azienda.partita_iva || '12345678901'"></div>
-                            </div>
-                            <div>
-                                <span class="font-medium text-gray-700">Indirizzo:</span>
-                                <div x-text="formData.intestazione_azienda.indirizzo || 'Via Roma 123, 00100 Roma'"></div>
-                            </div>
-                            <div>
-                                <span class="font-medium text-gray-700">Telefono:</span>
-                                <div x-text="formData.intestazione_azienda.telefono || '+39 06 1234567'"></div>
-                            </div>
+                    <div class="space-y-1 text-xs text-gray-600">
+                        <div class="flex justify-between">
+                            <span class="font-medium">Ragione Sociale:</span>
+                            <span x-text="formData.intestazione_azienda.ragione_sociale || 'La Tua Azienda S.r.l.'" class="truncate ml-2"></span>
                         </div>
-                        <p class="text-xs text-gray-500 mt-2">
+                        <div class="flex justify-between">
+                            <span class="font-medium">P.IVA:</span>
+                            <span x-text="formData.intestazione_azienda.partita_iva || '12345678901'"></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="font-medium">Telefono:</span>
+                            <span x-text="formData.intestazione_azienda.telefono || '+39 06 1234567'"></span>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-2 italic">
                             <i class="fas fa-info-circle mr-1"></i>
-                            I dati aziendali vengono caricati dal tuo profilo
+                            Dati dal tuo profilo
                         </p>
                     </div>
                 </div>
 
-                <!-- 2. Dati Cliente -->
-                <div class="form-section bg-white rounded-lg shadow border border-gray-200 p-6">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">
-                        <i class="fas fa-user text-blue-600 mr-2"></i>
+                <!-- 2. Dati Cliente - Compatto -->
+                <div class="form-section bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+                    <h3 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                        <i class="fas fa-user text-blue-600 mr-2 text-xs"></i>
                         Dati Cliente
                     </h3>
-                    <div class="space-y-4">
+                    <div class="space-y-2">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Ragione Sociale *</label>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Ragione Sociale *</label>
                             <input type="text" 
                                    x-model="formData.intestazione_cliente.ragione_sociale"
                                    @input="updateAnteprima()"
-                                   class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                   class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 form-input-sm"
                                    placeholder="Nome o Ragione Sociale">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Persona di Riferimento</label>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Persona di Riferimento</label>
                             <input type="text" 
                                    x-model="formData.intestazione_cliente.persona_riferimento"
                                    @input="updateAnteprima()"
-                                   class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                   class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 form-input-sm"
                                    placeholder="Nome del referente">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Indirizzo</label>
-                            <div class="space-y-2">
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Email</label>
+                            <input type="email" 
+                                   x-model="formData.intestazione_cliente.email"
+                                   @input="updateAnteprima()"
+                                   class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 form-input-sm"
+                                   placeholder="email@example.com">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Telefono</label>
+                            <input type="tel" 
+                                   x-model="formData.intestazione_cliente.telefono"
+                                   @input="updateAnteprima()"
+                                   class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 form-input-sm"
+                                   placeholder="+39 xxx xxxxxxx">
+                        </div>
+                        <!-- Indirizzo in forma compatta -->
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Indirizzo</label>
+                            <div class="space-y-1">
                                 <input type="text" 
                                        x-model="formData.intestazione_cliente.indirizzo_via"
                                        @input="updateAnteprima()"
-                                       class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                       class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 form-input-sm"
                                        placeholder="Via e numero civico">
-                                <div class="grid grid-cols-2 gap-2">
+                                <div class="grid grid-cols-3 gap-1">
                                     <input type="text" 
                                            x-model="formData.intestazione_cliente.indirizzo_cap"
                                            @input="updateAnteprima()"
-                                           class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                           class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 form-input-sm"
                                            placeholder="CAP">
                                     <input type="text" 
                                            x-model="formData.intestazione_cliente.indirizzo_citta"
                                            @input="updateAnteprima()"
-                                           class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                           class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 form-input-sm"
                                            placeholder="Città">
-                                </div>
-                                <div class="grid grid-cols-2 gap-2">
                                     <input type="text" 
                                            x-model="formData.intestazione_cliente.indirizzo_provincia"
                                            @input="updateAnteprima()"
-                                           class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                                           placeholder="Provincia (es. RM)">
-                                    <input type="text" 
-                                           x-model="formData.intestazione_cliente.indirizzo_nazione"
-                                           @input="updateAnteprima()"
-                                           value="Italia"
-                                           class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                                           placeholder="Nazione">
+                                           class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 form-input-sm"
+                                           placeholder="Prov.">
                                 </div>
                             </div>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                            <input type="email" 
-                                   x-model="formData.intestazione_cliente.email"
-                                   @input="updateAnteprima()"
-                                   class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                                   placeholder="email@example.com">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Telefono</label>
-                            <input type="tel" 
-                                   x-model="formData.intestazione_cliente.telefono"
-                                   @input="updateAnteprima()"
-                                   class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                                   placeholder="+39 xxx xxxxxxx">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">P.IVA / C.F.</label>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">P.IVA / C.F.</label>
                             <input type="text" 
                                    x-model="formData.intestazione_cliente.partita_iva"
                                    @input="updateAnteprima()"
-                                   class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                   class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 form-input-sm"
                                    placeholder="Partita IVA o Codice Fiscale">
                         </div>
                     </div>
                 </div>
 
-                <!-- 3. Informazioni Preventivo -->
-                <div class="form-section bg-white rounded-lg shadow border border-gray-200 p-6">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">
-                        <i class="fas fa-info-circle text-blue-600 mr-2"></i>
-                        Informazioni Preventivo
+                <!-- 3. Informazioni Preventivo - Compatto -->
+                <div class="form-section bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+                    <h3 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                        <i class="fas fa-info-circle text-blue-600 mr-2 text-xs"></i>
+                        Info Preventivo
                     </h3>
-                    <div class="space-y-4">
+                    <div class="space-y-2">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Template Documento</label>
-                            <div class="flex space-x-2">
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Template</label>
+                            <div class="flex space-x-1">
                                 <select x-model="formData.template_id"
                                         @change="updateAnteprima()"
-                                        class="flex-1 rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                        class="flex-1 rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 form-input-sm">
                                     <option value="">Default</option>
                                     <template x-for="template in availableTemplates" :key="template.id">
                                         <option :value="template.id" x-text="template.name"></option>
@@ -223,42 +255,33 @@
                                 </select>
                                 <button @click="loadTemplates()" 
                                         class="inline-flex items-center px-2 py-1 border border-gray-300 rounded-md text-xs text-gray-700 bg-white hover:bg-gray-50">
-                                    <i class="fas fa-sync-alt mr-1"></i>
-                                    Ricarica
+                                    <i class="fas fa-sync-alt"></i>
                                 </button>
-                                <a href="/templates/composer" target="_blank"
-                                   class="inline-flex items-center px-2 py-1 border border-purple-300 rounded-md text-xs text-purple-700 bg-purple-50 hover:bg-purple-100">
-                                    <i class="fas fa-cogs mr-1"></i>
-                                    Composer
-                                </a>
                             </div>
-                            <p class="text-xs text-gray-500 mt-1">
-                                Seleziona il template per personalizzare layout e moduli del documento
-                            </p>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Oggetto Preventivo *</label>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Oggetto Preventivo *</label>
                             <input type="text" 
                                    x-model="formData.oggetto_preventivo"
                                    @input="updateAnteprima()"
-                                   class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                   class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 form-input-sm"
                                    placeholder="Descrizione del lavoro/servizio">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Data Scadenza</label>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Data Scadenza</label>
                             <input type="date" 
                                    x-model="formData.data_scadenza"
                                    @input="updateAnteprima()"
-                                   class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                   class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 form-input-sm">
                         </div>
                     </div>
                 </div>
 
-                <!-- 4. Voci Preventivo -->
-                <div class="form-section bg-white rounded-lg shadow border border-gray-200 p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-medium text-gray-900">
-                            <i class="fas fa-list text-blue-600 mr-2"></i>
+                <!-- 4. Voci Preventivo - Compatto -->
+                <div class="form-section bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-sm font-semibold text-gray-900 flex items-center">
+                            <i class="fas fa-list text-blue-600 mr-2 text-xs"></i>
                             Voci Preventivo
                         </h3>
                         <button x-on:click="aggiungiVoce()" 
@@ -268,63 +291,64 @@
                         </button>
                     </div>
 
-                    <!-- Lista Voci Compatta -->
-                    <div class="space-y-3">
+                    <!-- Lista Voci Ultra-Compatta -->
+                    <div class="space-y-2 max-h-96 overflow-y-auto">
                         <template x-for="(voce, index) in formData.tabella_preventivo.voci" :key="index">
-                            <div class="border rounded-lg p-3 bg-gray-50">
-                                <div class="space-y-2">
+                            <div class="border rounded-md p-2 bg-gray-50">
+                                <div class="space-y-1">
                                     <textarea x-model="voce.descrizione"
                                               @input="updateRigaTotale(index); updateAnteprima()"
                                               class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-xs"
-                                              rows="2"
+                                              rows="1"
                                               placeholder="Descrizione"></textarea>
-                                    <div class="grid grid-cols-3 gap-2">
+                                    <div class="grid grid-cols-4 gap-1">
                                         <input type="number" 
                                                x-model.number="voce.quantita"
                                                @input="updateRigaTotale(index); updateAnteprima()"
-                                               class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-xs"
+                                               class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-xs py-1 px-1"
                                                placeholder="Qtà">
                                         <input type="number" 
                                                x-model.number="voce.prezzo_unitario"
                                                @input="updateRigaTotale(index); updateAnteprima()"
-                                               class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-xs"
-                                               placeholder="Prezzo">
+                                               class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-xs py-1 px-1"
+                                               placeholder="€">
                                         <input type="number" 
                                                x-model.number="voce.sconto_percentuale"
                                                @input="updateRigaTotale(index); updateAnteprima()"
-                                               class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-xs"
-                                               placeholder="Sconto %">
-                                    </div>
-                                    <div class="flex justify-between items-center">
-                                        <span class="text-xs font-medium" x-text="formatCurrency(voce.totale_riga || 0)"></span>
+                                               class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-xs py-1 px-1"
+                                               placeholder="%">
                                         <button x-on:click="rimuoviVoce(index)" 
-                                                class="text-red-600 hover:text-red-900 text-xs">
+                                                class="text-red-600 hover:text-red-900 text-xs px-1 py-1 rounded hover:bg-red-50">
                                             <i class="fas fa-trash"></i>
                                         </button>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-xs font-semibold text-green-600" x-text="formatCurrency(voce.totale_riga || 0)"></span>
                                     </div>
                                 </div>
                             </div>
                         </template>
                         
                         <div x-show="formData.tabella_preventivo.voci.length === 0" 
-                             class="text-center py-4 text-gray-500 text-sm">
-                            Nessuna voce inserita
+                             class="text-center py-6 text-gray-500 text-xs">
+                            <i class="fas fa-inbox text-2xl text-gray-300 mb-2"></i>
+                            <div>Nessuna voce inserita</div>
                         </div>
                     </div>
 
-                    <!-- Totali -->
+                    <!-- Totali Compatti -->
                     <div x-show="formData.tabella_preventivo.voci.length > 0" 
-                         class="mt-4 pt-4 border-t">
-                        <div class="space-y-1 text-sm">
+                         class="mt-3 pt-3 border-t bg-white rounded p-2">
+                        <div class="space-y-1 text-xs">
                             <div class="flex justify-between">
                                 <span>Imponibile:</span>
-                                <span x-text="formatCurrency(formData.sezione_totali.imponibile || 0)"></span>
+                                <span class="font-medium" x-text="formatCurrency(formData.sezione_totali.imponibile || 0)"></span>
                             </div>
                             <div class="flex justify-between">
                                 <span>IVA (22%):</span>
-                                <span x-text="formatCurrency(formData.sezione_totali.iva || 0)"></span>
+                                <span class="font-medium" x-text="formatCurrency(formData.sezione_totali.iva || 0)"></span>
                             </div>
-                            <div class="flex justify-between font-semibold text-base border-t pt-1">
+                            <div class="flex justify-between font-bold text-sm border-t pt-1 text-green-600">
                                 <span>Totale:</span>
                                 <span x-text="formatCurrency(formData.sezione_totali.totale_generale || 0)"></span>
                             </div>
@@ -332,31 +356,32 @@
                     </div>
                 </div>
 
-                <!-- 5. Condizioni Generali -->
-                <div class="form-section bg-white rounded-lg shadow border border-gray-200 p-6">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">
-                        <i class="fas fa-file-contract text-blue-600 mr-2"></i>
+                <!-- 5. Condizioni Generali - Compatto -->
+                <div class="form-section bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+                    <h3 class="text-sm font-semibold text-gray-900 mb-2 flex items-center">
+                        <i class="fas fa-file-contract text-blue-600 mr-2 text-xs"></i>
                         Condizioni Generali
                     </h3>
                     <textarea x-model="formData.condizioni_generali.testo"
                               @input="updateAnteprima()"
-                              class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                              rows="4"
+                              class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-xs"
+                              rows="3"
                               placeholder="Inserisci le condizioni di pagamento, garanzie, clausole speciali...">
                     </textarea>
                 </div>
             </div>
         </div>
 
-        <!-- Area Destra: Documento Full Page -->
-        <div class="w-2/3 bg-white overflow-y-auto" id="anteprima-content">
+        <!-- Area Destra: Documento Full Page - Usa tutto lo spazio rimanente -->
+        <div class="flex-1 bg-white documento-area overflow-y-auto" id="anteprima-content">
             <!-- L'anteprima verrà caricata qui via HTMX -->
             <div class="flex items-center justify-center h-full text-gray-500">
                 <div class="text-center">
-                    <i class="fas fa-file-alt text-4xl mb-4 text-gray-300"></i>
-                    <p class="mb-4">Compila i campi per vedere l'anteprima</p>
+                    <i class="fas fa-file-alt text-6xl mb-6 text-gray-300"></i>
+                    <h3 class="text-lg font-medium text-gray-700 mb-2">Anteprima Documento</h3>
+                    <p class="mb-6 text-gray-500 max-w-md">Compila i campi nella sidebar sinistra per vedere l'anteprima del preventivo</p>
                     <button x-on:click="rigeneraAnteprima()" 
-                            class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                            class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <i class="fas fa-eye mr-2"></i>
                         Genera Anteprima
                     </button>
@@ -365,7 +390,9 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block extra_scripts %}
 <script>
     function preventivoForm() {
         return {
@@ -716,8 +743,18 @@
                     console.error('Errore nel download del PDF:', error);
                     showNotification(`Errore nel download del PDF: ${error.message}`, 'error');
                 }
+            },
+
+            // Funzione di utilità per formattare valute
+            formatCurrency(value) {
+                return new Intl.NumberFormat('it-IT', {
+                    style: 'currency',
+                    currency: 'EUR',
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(value || 0);
             }
         }
     }
-</script>
+</script> 
 {% endblock %} 

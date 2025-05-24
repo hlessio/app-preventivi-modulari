@@ -80,16 +80,18 @@
         
         @media screen {
             body {
-                padding: 20px;
+                padding: 0;
                 font-size: 14px;
+                background-color: white;
             }
             
             .container {
-                width: 21cm; /* Simula A4 anche su web */
-                max-width: 95%;
-                margin: 0 auto;
-                padding: 2cm 1.5cm;
-                border: 1px solid #ddd;
+                width: 100%; /* Usa tutta la larghezza disponibile */
+                max-width: none; /* Rimuovi limitazione A4 */
+                margin: 0;
+                padding: 20px;
+                border: none; /* Rimuovi bordo per l'anteprima */
+                box-shadow: none; /* Rimuovi ombra per l'anteprima */
             }
         }
         

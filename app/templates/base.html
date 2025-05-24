@@ -53,6 +53,7 @@
 </head>
 <body class="bg-gray-50 min-h-screen">
     <!-- Header -->
+    {% block header %}
     <header class="bg-white shadow-sm border-b border-gray-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
@@ -73,14 +74,17 @@
             </div>
         </div>
     </header>
+    {% endblock %}
 
     <!-- Notification Area -->
     <div id="notifications" class="fixed top-20 right-4 z-50 space-y-2"></div>
 
     <!-- Main Content -->
+    {% block main_layout %}
     <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         {% block content %}{% endblock %}
     </main>
+    {% endblock %}
 
     <!-- Loading Spinner -->
     <div id="loading" class="htmx-indicator fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
