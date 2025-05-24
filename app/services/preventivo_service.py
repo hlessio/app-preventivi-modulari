@@ -16,7 +16,31 @@ class PreventivoService:
         """
         Salva un nuovo preventivo nel database.
         I nuovi preventivi sono sempre 'attivi'.
+        Include verifica anti-duplicati come fallback di sicurezza.
         """
+        # Verifica anti-duplicati: controlla se esiste già un preventivo simile
+        numero_preventivo = preventivo_data.metadati_preventivo.numero_preventivo
+        nome_documento = preventivo_data.metadati_preventivo.nome_documento
+        
+        # Cerca preventivi esistenti con stesso numero o nome documento (ultimi 10 minuti)
+        cutoff_time = datetime.utcnow() - timedelta(minutes=10)
+        
+        existing_preventivo = None
+        if numero_preventivo and numero_preventivo.startswith('PREV-'):
+            # Per preventivi con numero auto-generato, cerca anche per nome documento
+            existing_preventivo = self.db.query(Preventivo).filter(
+                Preventivo.user_id == user_id,
+                Preventivo.stato_record == "attivo",
+                Preventivo.created_at >= cutoff_time,
+                (Preventivo.numero_preventivo == numero_preventivo) | 
+                (Preventivo.nome_documento == nome_documento)
+            ).first()
+        
+        if existing_preventivo:
+            print(f"ANTI-DUPLICATI: Trovato preventivo esistente {existing_preventivo.id}, aggiornando invece di creare nuovo")
+            # Aggiorna il preventivo esistente invece di crearne uno nuovo
+            return self.aggiorna_preventivo(str(existing_preventivo.id), preventivo_data, user_id)
+        
         # Converti il modello Pydantic in dizionario per salvarlo come JSON
         preventivo_json = preventivo_data.model_dump(mode='json')
         
@@ -24,6 +48,7 @@ class PreventivoService:
         db_preventivo = Preventivo(
             user_id=user_id,
             numero_preventivo=preventivo_data.metadati_preventivo.numero_preventivo,
+            nome_documento=preventivo_data.metadati_preventivo.nome_documento,
             oggetto_preventivo=preventivo_data.metadati_preventivo.oggetto_preventivo,
             stato_preventivo=preventivo_data.metadati_preventivo.stato_preventivo,
             template_id=preventivo_data.metadati_preventivo.template_id,
@@ -55,6 +80,7 @@ class PreventivoService:
         # Aggiorna i dati
         preventivo_json = preventivo_data.model_dump(mode='json')
         db_preventivo.numero_preventivo = preventivo_data.metadati_preventivo.numero_preventivo
+        db_preventivo.nome_documento = preventivo_data.metadati_preventivo.nome_documento
         db_preventivo.oggetto_preventivo = preventivo_data.metadati_preventivo.oggetto_preventivo
         db_preventivo.stato_preventivo = preventivo_data.metadati_preventivo.stato_preventivo
         db_preventivo.template_id = preventivo_data.metadati_preventivo.template_id
@@ -101,6 +127,10 @@ class PreventivoService:
             # Imposta o sovrascrivi il template_id nei dati con quello dalla colonna del DB
             # Converti l'UUID in stringa se presente, altrimenti None
             preventivo_dati_dict['metadati_preventivo']['template_id'] = str(db_preventivo.template_id) if db_preventivo.template_id else None
+            
+            # Imposta il nome_documento dal database se presente
+            if db_preventivo.nome_documento:
+                preventivo_dati_dict['metadati_preventivo']['nome_documento'] = db_preventivo.nome_documento
             
             # Ora crea il PreventivoMasterModel usando il dizionario aggiornato
             preventivo_model = PreventivoMasterModel(**preventivo_dati_dict)
@@ -313,6 +343,7 @@ class PreventivoService:
             result.append(PreventivoListItemConCartella(
                 id=str(preventivo_obj.id),
                 numero_preventivo=preventivo_obj.numero_preventivo,
+                nome_documento=preventivo_obj.nome_documento,
                 oggetto_preventivo=preventivo_obj.oggetto_preventivo,
                 stato_preventivo=preventivo_obj.stato_preventivo,
                 nome_cliente=preventivo_obj.nome_cliente,

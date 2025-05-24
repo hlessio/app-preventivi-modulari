@@ -444,6 +444,7 @@
     function preventivoForm() {
         return {
             salvando: false,
+            preventivo_id_corrente: null, // ID del documento corrente (per nuovi documenti dopo primo salvataggio)
             availableTemplates: [], // Lista dei template disponibili
             selectedTemplate: null, // Template selezionato completo
             visibleModules: [], // Lista dei moduli visibili basata sul template
@@ -503,32 +504,36 @@
                 
                 // Ottieni il template preselezionato dal parametro URL
                 const preselectedTemplateId = '{{ preselected_template_id or "" }}';
-                if (preselectedTemplateId) {
-                    this.formData.template_id = preselectedTemplateId;
-                    this.loadTemplateById(preselectedTemplateId);
-                } else {
-                    // Se non c'è template preselezionato, carica la lista e usa il default
-                    this.loadTemplates();
-                }
+                
+                // SEMPRE carica i template prima, poi i dati del preventivo
+                this.loadTemplates().then(() => {
+                    console.log('Template caricati, ora carico dati preventivo se necessario');
+                    
+                    if (preventivo_id) {
+                        // È una modifica - carica i dati del preventivo
+                        this.caricaPreventivo(preventivo_id);
+                    } else if (preselectedTemplateId) {
+                        // È un nuovo preventivo con template preselezionato
+                        this.formData.template_id = preselectedTemplateId;
+                        this.loadTemplateById(preselectedTemplateId);
+                    } else {
+                        // È un nuovo preventivo normale - inizializza con tutti i moduli visibili
+                        this.updateVisibleModules();
+                    }
+                });
                 
                 // Inizializza con una voce vuota
                 this.aggiungiVoce();
-                
-                // Carica dati se è una modifica
-                if (preventivo_id) {
-                    this.caricaPreventivo(preventivo_id);
-                } else {
-                    // Se è un nuovo preventivo, inizializza con tutti i moduli visibili
-                    this.updateVisibleModules();
-                }
             },
 
             async loadTemplates() {
                 try {
+                    console.log('Caricamento template in corso...');
                     const response = await fetch('/templates?user_id=da2cb935-e023-40dd-9703-d918f1066b24&document_type=preventivo');
                     if (response.ok) {
                         const data = await response.json();
                         this.availableTemplates = data || []; // L'API restituisce direttamente un array
+                        console.log('Template caricati:', this.availableTemplates.length);
                         
                         // Se non c'è template selezionato, usa il default
                         if (!this.formData.template_id && this.availableTemplates.length > 0) {
@@ -537,13 +542,17 @@
                                 this.formData.template_id = defaultTemplate.id;
                                 this.selectedTemplate = defaultTemplate;
                                 this.updateVisibleModules();
+                                console.log('Template default selezionato:', defaultTemplate.name);
                             }
                         }
+                        return true; // Successo
                     } else {
                         console.error('Errore nel caricamento template:', response.status);
+                        return false;
                     }
                 } catch (error) {
                     console.error('Errore nel caricamento template:', error);
+                    return false;
                 }
             },
 
@@ -663,6 +672,7 @@
                     metadati_preventivo: {
                         id_preventivo: "00000000-0000-0000-0000-000000000000", // UUID temporaneo
                         numero_preventivo: this.formData.numero_preventivo,
+                        nome_documento: this.formData.nome_documento,
                         data_emissione: today,
                         data_scadenza: this.formData.data_scadenza || null,
                         oggetto_preventivo: this.formData.oggetto_preventivo || '',
@@ -774,8 +784,25 @@
 
                     const data = this.preparaData();
                     
-                    const response = await fetch('/preventivo/salva', {
-                        method: 'POST',
+                    // Determina se è una modifica o un nuovo preventivo
+                    const preventivo_id_dalla_pagina = '{{ preventivo_id or "" }}';
+                    // Usa l'ID dalla pagina o quello memorizzato dopo un salvataggio precedente
+                    const preventivo_id = preventivo_id_dalla_pagina || this.preventivo_id_corrente;
+                    const isUpdate = !!preventivo_id;
+                    
+                    let url, method;
+                    if (isUpdate) {
+                        url = `/preventivo/${preventivo_id}/aggiorna?user_id=da2cb935-e023-40dd-9703-d918f1066b24`;
+                        method = 'PUT';
+                    } else {
+                        url = '/preventivo/salva';
+                        method = 'POST';
+                    }
+                    
+                    console.log(`Salvataggio: ${isUpdate ? 'UPDATE' : 'CREATE'}, ID: ${preventivo_id}, URL: ${url}`);
+                    
+                    const response = await fetch(url, {
+                        method: method,
                         headers: {
                             'Content-Type': 'application/json'
                         },
@@ -785,7 +812,14 @@
                     if (response.ok) {
                         const result = await response.json();
                         this.formData.numero_preventivo = result.numero_preventivo;
-                        showNotification('Preventivo salvato con successo!');
+                        
+                        // IMPORTANTE: Memorizza l'ID dopo il primo salvataggio
+                        if (!isUpdate && result.preventivo_id) {
+                            this.preventivo_id_corrente = result.preventivo_id;
+                            console.log('ID documento memorizzato:', result.preventivo_id);
+                        }
+                        
+                        showNotification(isUpdate ? 'Documento aggiornato con successo!' : 'Documento salvato con successo!');
                         
                         // Reindirizza alla dashboard dopo il salvataggio
                         setTimeout(() => {
@@ -798,7 +832,7 @@
                     }
                 } catch (error) {
                     console.error('Errore nel salvataggio:', error);
-                    showNotification('Errore nel salvataggio del preventivo', 'error');
+                    showNotification('Errore nel salvataggio del documento', 'error');
                 } finally {
                     this.salvando = false;
                 }
@@ -806,20 +840,38 @@
 
             async caricaPreventivo(id) {
                 try {
+                    console.log('Caricamento preventivo ID:', id);
                     const response = await fetch(`/preventivo/${id}?user_id=da2cb935-e023-40dd-9703-d918f1066b24`);
                     if (response.ok) {
                         const data = await response.json();
+                        console.log('Dati preventivo caricati:', data);
                         
-                        // Aggiorna formData con i dati caricati
+                        // Aggiorna formData con i dati caricati, mantenendo la struttura esistente
                         this.formData = { ...this.formData, ...data };
                         
-                        // Carica il template_id se presente nei metadati
-                        if (data.metadati_preventivo && data.metadati_preventivo.template_id) {
-                            this.formData.template_id = data.metadati_preventivo.template_id;
-                            
-                            // Trova il template completo nella lista
-                            this.selectedTemplate = this.availableTemplates.find(t => t.id === this.formData.template_id);
-                            if (this.selectedTemplate) {
+                        // Gestisci specificamente il nome_documento dai metadati
+                        if (data.metadati_preventivo) {
+                            if (data.metadati_preventivo.nome_documento) {
+                                this.formData.nome_documento = data.metadati_preventivo.nome_documento;
+                                console.log('Nome documento caricato:', this.formData.nome_documento);
+                            }
+                            if (data.metadati_preventivo.template_id) {
+                                this.formData.template_id = data.metadati_preventivo.template_id;
+                                console.log('Template ID dal preventivo:', this.formData.template_id);
+                                console.log('Template disponibili:', this.availableTemplates.length);
+                                
+                                // Trova il template completo nella lista
+                                this.selectedTemplate = this.availableTemplates.find(t => t.id === this.formData.template_id);
+                                if (this.selectedTemplate) {
+                                    console.log('Template trovato e selezionato:', this.selectedTemplate.name);
+                                    this.updateVisibleModules();
+                                } else {
+                                    console.warn('Template non trovato nella lista disponibili, ID:', this.formData.template_id);
+                                    // Fallback: carica tutti i moduli
+                                    this.updateVisibleModules();
+                                }
+                            } else {
+                                console.log('Nessun template_id nel preventivo, uso default');
                                 this.updateVisibleModules();
                             }
                         }
@@ -828,7 +880,7 @@
                     }
                 } catch (error) {
                     console.error('Errore nel caricamento:', error);
-                    showNotification('Errore nel caricamento del preventivo', 'error');
+                    showNotification('Errore nel caricamento del documento', 'error');
                 }
             },
 

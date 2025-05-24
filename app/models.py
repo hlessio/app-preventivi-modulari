@@ -71,6 +71,7 @@ class SezioneTotali(BaseModel):
 class MetadatiPreventivo(BaseModel):
     id_preventivo: UUID
     numero_preventivo: str
+    nome_documento: Optional[str] = Field(None, description="Nome interno del documento per organizzazione")
     data_emissione: datetime.date # Changed to datetime.date
     data_scadenza: Optional[datetime.date] = None # Changed to datetime.date
     oggetto_preventivo: str
@@ -90,6 +91,7 @@ class PreventivoMasterModel(BaseModel):
 class PreventivoListItem(BaseModel):
     id: UUID
     numero_preventivo: str
+    nome_documento: Optional[str] = None
     oggetto_preventivo: str
     stato_preventivo: str # Lo stato funzionale (bozza, inviato, etc.)
     stato_record: Optional[str] = None # Lo stato del record (attivo, cestinato)
@@ -235,6 +237,7 @@ class CartellaSpostamento(BaseModel):
 class PreventivoListItemConCartella(BaseModel):
     id: str
     numero_preventivo: str
+    nome_documento: Optional[str] = None
     oggetto_preventivo: str
     stato_preventivo: str
     nome_cliente: Optional[str] = None

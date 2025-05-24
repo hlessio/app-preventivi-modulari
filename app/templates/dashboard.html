@@ -408,7 +408,8 @@
                                     <!-- Info Principale -->
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-center space-x-2 mb-2">
-                                            <h3 class="text-lg font-semibold text-gray-900 truncate" x-text="preventivo.numero_preventivo"></h3>
+                                            <h3 class="text-lg font-semibold text-gray-900 truncate" 
+                                                x-text="preventivo.nome_documento || preventivo.numero_preventivo"></h3>
                                             <span :class="getStatoClass(preventivo.stato_preventivo)" 
                                                   class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
                                                   x-text="preventivo.stato_preventivo"></span>
@@ -420,7 +421,14 @@
                                                 <span x-text="preventivo.cartella_nome"></span>
                                             </span>
                                         </div>
-                                        <p class="text-sm text-gray-600 mb-1" x-text="preventivo.oggetto_preventivo"></p>
+                                        <p class="text-sm text-gray-600 mb-1">
+                                            <span class="text-xs text-gray-500">Numero:</span> 
+                                            <span x-text="preventivo.numero_preventivo"></span>
+                                        </p>
+                                        <p class="text-sm text-gray-600 mb-1">
+                                            <span class="text-xs text-gray-500">Oggetto:</span> 
+                                            <span x-text="preventivo.oggetto_preventivo"></span>
+                                        </p>
                                         <p class="text-sm text-gray-500">Cliente: <span x-text="preventivo.nome_cliente || 'N/A'"></span></p>
                                         <div class="flex items-center space-x-4 mt-3">
                                             <p class="text-sm text-gray-500">

@@ -62,6 +62,7 @@ class Preventivo(Base):
     
     # Metadati del preventivo
     numero_preventivo = Column(String(100), nullable=False, index=True)
+    nome_documento = Column(String(500), nullable=True)  # Nome interno del documento per organizzazione
     oggetto_preventivo = Column(String(500), nullable=False)
     stato_preventivo = Column(String(50), default="bozza")  # bozza, inviato, accettato, rifiutato, scaduto
     

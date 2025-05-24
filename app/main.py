@@ -66,7 +66,7 @@ async def nuovo_preventivo(
     """
     Form per creare un nuovo preventivo, opzionalmente con un template preselezionato
     """
-    return templates.TemplateResponse("preventivo_form.html", {
+    return templates.TemplateResponse("document_form.html", {
         "request": request,
         "preventivo_id": None,
         "preselected_template_id": template_id
@@ -78,7 +78,7 @@ async def modifica_preventivo(request: Request, preventivo_id: str):
     """
     Form per modificare un preventivo esistente
     """
-    return templates.TemplateResponse("preventivo_form.html", {
+    return templates.TemplateResponse("document_form.html", {
         "request": request,
         "preventivo_id": preventivo_id
     })
@@ -160,6 +160,48 @@ async def salva_preventivo_endpoint(
         }
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Errore nel salvataggio: {str(e)}")
+
+# Endpoint per aggiornare un preventivo esistente
+@app.put("/preventivo/{preventivo_id}/aggiorna", status_code=status.HTTP_200_OK)
+async def aggiorna_preventivo_endpoint(
+    preventivo_id: str,
+    request: Request,
+    user_id: str = Query(default="da2cb935-e023-40dd-9703-d918f1066b24", description="ID dell'utente"),
+    db: Session = Depends(get_db)
+):
+    """
+    Aggiorna un preventivo esistente nel database.
+    Accetta i dati in formato JSON nel body della richiesta.
+    """
+    try:
+        # Leggi il body della richiesta
+        body = await request.json()
+        
+        # Rimuovi user_id dai dati se presente (lo passiamo come parametro)
+        body.pop("user_id", None)
+        
+        # Valida i dati con Pydantic
+        preventivo_data = PreventivoMasterModel(**body)
+        
+        # Calcola i totali prima di salvare
+        calcola_totali_preventivo(preventivo_data)
+        
+        # Utilizza il servizio per aggiornare il preventivo
+        preventivo_service = PreventivoService(db)
+        db_preventivo = preventivo_service.aggiorna_preventivo(preventivo_id, preventivo_data, user_id)
+        
+        if not db_preventivo:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Preventivo non trovato o non modificabile")
+        
+        return {
+            "message": "Preventivo aggiornato con successo",
+            "preventivo_id": str(db_preventivo.id),
+            "numero_preventivo": db_preventivo.numero_preventivo
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Errore nell'aggiornamento: {str(e)}")
 
 # Endpoint per caricare un preventivo (dati completi per modifica)
 @app.get("/preventivo/{preventivo_id}", response_model=PreventivoMasterModel)

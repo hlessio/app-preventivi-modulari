@@ -88,8 +88,9 @@ app-preventivi-modulari/
 │   └── templates/             # Template Jinja2
 │       ├── base.html          # Template base
 │       ├── dashboard.html     # Dashboard preventivi
-│       ├── preventivo_form.html # Form creazione/modifica
+│       ├── document_form.html # Form creazione/modifica documenti
 │       └── preventivo/        # Template modulari documento
+│           └── preventivo_unificato.html
 ├── requirements.txt           # Dipendenze Python
 ├── context.md                # Documentazione sviluppo
 └── README.md                 # Questo file

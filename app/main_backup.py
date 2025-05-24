@@ -48,7 +48,7 @@ async def nuovo_preventivo(request: Request):
     """
     Form per creare un nuovo preventivo
     """
-    return templates.TemplateResponse("preventivo_form.html", {
+    return templates.TemplateResponse("document_form.html", {
         "request": request,
         "preventivo_id": None
     })
@@ -59,7 +59,7 @@ async def modifica_preventivo(request: Request, preventivo_id: str):
     """
     Form per modificare un preventivo esistente
     """
-    return templates.TemplateResponse("preventivo_form.html", {
+    return templates.TemplateResponse("document_form.html", {
         "request": request,
         "preventivo_id": preventivo_id
     })
