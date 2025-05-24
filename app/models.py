@@ -189,4 +189,63 @@ class UserPreferencesResponse(BaseModel):
     updated_at: datetime.datetime
 
     class Config:
+        from_attributes = True
+
+# ================================
+# MODELLI CARTELLE
+# ================================
+
+class CartellaBase(BaseModel):
+    nome: str = Field(..., min_length=1, max_length=255, description="Nome della cartella")
+    descrizione: Optional[str] = Field(None, max_length=1000, description="Descrizione opzionale della cartella")
+    colore: Optional[str] = Field(None, pattern=r'^#[0-9A-Fa-f]{6}$', description="Colore esadecimale (es. #FF5733)")
+    icona: Optional[str] = Field(None, max_length=50, description="Nome dell'icona")
+    parent_id: Optional[str] = Field(None, description="ID della cartella padre (per cartelle annidate)")
+    ordine: int = Field(0, description="Ordine di visualizzazione")
+
+class CartellaCreate(CartellaBase):
+    pass
+
+class CartellaUpdate(BaseModel):
+    nome: Optional[str] = Field(None, min_length=1, max_length=255)
+    descrizione: Optional[str] = Field(None, max_length=1000)
+    colore: Optional[str] = Field(None, pattern=r'^#[0-9A-Fa-f]{6}$')
+    icona: Optional[str] = Field(None, max_length=50)
+    parent_id: Optional[str] = None
+    ordine: Optional[int] = None
+
+class CartellaResponse(CartellaBase):
+    id: str
+    user_id: str
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
+    numero_preventivi: int = Field(0, description="Numero di preventivi nella cartella")
+    
+    class Config:
+        from_attributes = True
+
+class CartellaSpostamento(BaseModel):
+    preventivo_ids: List[str] = Field(..., description="Lista di ID preventivi da spostare")
+    cartella_id: Optional[str] = Field(None, description="ID cartella destinazione (None per rimuovere dalla cartella)")
+
+# ================================
+# MODELLI PREVENTIVO CON CARTELLE
+# ================================
+
+class PreventivoListItemConCartella(BaseModel):
+    id: str
+    numero_preventivo: str
+    oggetto_preventivo: str
+    stato_preventivo: str
+    nome_cliente: Optional[str] = None
+    valore_totale_lordo: Optional[float] = None
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
+    stato_record: str
+    cestinato_il: Optional[datetime.datetime] = None
+    cartella_id: Optional[str] = None
+    cartella_nome: Optional[str] = None
+    cartella_colore: Optional[str] = None
+    
+    class Config:
         from_attributes = True 

@@ -6,10 +6,11 @@ from sqlalchemy.orm import Session
 # from uuid import UUID # Rimuoviamo l'import UUID
 from typing import List, Optional
 
-from .models import PreventivoMasterModel, DocumentTemplateCreate, DocumentTemplateUpdate, DocumentTemplateResponse, PreventivoListItem
+from .models import PreventivoMasterModel, DocumentTemplateCreate, DocumentTemplateUpdate, DocumentTemplateResponse, PreventivoListItem, CartellaCreate, CartellaUpdate, CartellaResponse, CartellaSpostamento, PreventivoListItemConCartella
 from .services.preventivo_calculator import calcola_totali_preventivo
 from .services.preventivo_service import PreventivoService
 from .services.document_template_service import DocumentTemplateService
+from .services.cartella_service import CartellaService
 # Scommento ora che WeasyPrint funziona correttamente
 from .services.pdf_export_service import PDFExportService
 from .database import get_db, engine, Base
@@ -674,4 +675,221 @@ async def anteprima_preventivo_con_template(
 
 # Esempio di come potresti avviare l'app con Uvicorn da riga di comando:
 # uvicorn app.main:app --reload
-# (assicurati di essere nella directory principale del progetto, non dentro 'app/') 
+# (assicurati di essere nella directory principale del progetto, non dentro 'app/')
+
+# ================================
+# ENDPOINT CARTELLE
+# ================================
+
+@app.get("/cartelle", response_model=List[CartellaResponse])
+async def lista_cartelle(
+    user_id: str = Query(default="da2cb935-e023-40dd-9703-d918f1066b24", description="ID dell'utente"),
+    db: Session = Depends(get_db)
+):
+    """
+    Restituisce tutte le cartelle dell'utente con conteggio preventivi
+    """
+    cartella_service = CartellaService(db)
+    return cartella_service.lista_cartelle(user_id, includi_conteggi=True)
+
+@app.post("/cartelle", response_class=JSONResponse, status_code=status.HTTP_201_CREATED)
+async def crea_cartella(
+    cartella_data: CartellaCreate,
+    user_id: str = Query(default="da2cb935-e023-40dd-9703-d918f1066b24", description="ID dell'utente"),
+    db: Session = Depends(get_db)
+):
+    """
+    Crea una nuova cartella
+    """
+    try:
+        cartella_service = CartellaService(db)
+        db_cartella = cartella_service.crea_cartella(cartella_data, user_id)
+        
+        return {
+            "message": "Cartella creata con successo",
+            "cartella_id": str(db_cartella.id),
+            "nome": db_cartella.nome
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Errore nella creazione della cartella: {str(e)}")
+
+@app.get("/cartelle/{cartella_id}", response_model=CartellaResponse)
+async def ottieni_cartella(
+    cartella_id: str,
+    user_id: str = Query(default="da2cb935-e023-40dd-9703-d918f1066b24", description="ID dell'utente"),
+    db: Session = Depends(get_db)
+):
+    """
+    Ottiene una cartella specifica
+    """
+    cartella_service = CartellaService(db)
+    cartella = cartella_service.ottieni_cartella(cartella_id, user_id)
+    
+    if not cartella:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cartella non trovata")
+    
+    # Converti manualmente a CartellaResponse con conteggio
+    cartelle_list = cartella_service.lista_cartelle(user_id, includi_conteggi=True)
+    cartella_response = next((c for c in cartelle_list if c.id == cartella_id), None)
+    
+    if not cartella_response:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cartella non trovata")
+    
+    return cartella_response
+
+@app.put("/cartelle/{cartella_id}", response_class=JSONResponse)
+async def aggiorna_cartella(
+    cartella_id: str,
+    cartella_data: CartellaUpdate,
+    user_id: str = Query(default="da2cb935-e023-40dd-9703-d918f1066b24", description="ID dell'utente"),
+    db: Session = Depends(get_db)
+):
+    """
+    Aggiorna una cartella esistente
+    """
+    try:
+        cartella_service = CartellaService(db)
+        updated_cartella = cartella_service.aggiorna_cartella(cartella_id, cartella_data, user_id)
+        
+        if not updated_cartella:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cartella non trovata")
+        
+        return {
+            "message": "Cartella aggiornata con successo",
+            "cartella_id": str(updated_cartella.id),
+            "nome": updated_cartella.nome
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Errore nell'aggiornamento della cartella: {str(e)}")
+
+@app.delete("/cartelle/{cartella_id}", response_class=JSONResponse, status_code=status.HTTP_200_OK)
+async def elimina_cartella(
+    cartella_id: str,
+    user_id: str = Query(default="da2cb935-e023-40dd-9703-d918f1066b24", description="ID dell'utente"),
+    sposta_preventivi_a: Optional[str] = Query(None, description="ID della cartella di destinazione per i preventivi"),
+    db: Session = Depends(get_db)
+):
+    """
+    Elimina una cartella.
+    I preventivi possono essere spostati in un'altra cartella o rimanere senza cartella.
+    """
+    try:
+        cartella_service = CartellaService(db)
+        success = cartella_service.elimina_cartella(cartella_id, user_id, sposta_preventivi_a)
+        
+        if not success:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cartella non trovata")
+        
+        return {"message": "Cartella eliminata con successo"}
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Errore nell'eliminazione della cartella: {str(e)}")
+
+@app.post("/cartelle/sposta-preventivi", response_class=JSONResponse)
+async def sposta_preventivi_in_cartella(
+    spostamento: CartellaSpostamento,
+    user_id: str = Query(default="da2cb935-e023-40dd-9703-d918f1066b24", description="ID dell'utente"),
+    db: Session = Depends(get_db)
+):
+    """
+    Sposta uno o più preventivi in una cartella
+    """
+    try:
+        cartella_service = CartellaService(db)
+        num_spostati = cartella_service.sposta_preventivi(spostamento, user_id)
+        
+        return {
+            "message": f"{num_spostati} preventivi spostati con successo",
+            "preventivi_spostati": num_spostati,
+            "cartella_id": spostamento.cartella_id
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Errore nello spostamento dei preventivi: {str(e)}")
+
+@app.get("/cartelle/{cartella_id}/preventivi", response_model=List[PreventivoListItemConCartella])
+async def lista_preventivi_cartella(
+    cartella_id: str,
+    user_id: str = Query(default="da2cb935-e023-40dd-9703-d918f1066b24", description="ID dell'utente"),
+    stato_record: str = Query("attivo", description="Stato del record: attivo, cestinato"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    db: Session = Depends(get_db)
+):
+    """
+    Restituisce tutti i preventivi di una cartella specifica
+    Se cartella_id è 'none', restituisce i preventivi senza cartella
+    """
+    preventivo_service = PreventivoService(db)
+    
+    # Gestione speciale per preventivi senza cartella
+    if cartella_id.lower() == 'none':
+        cartella_id = 'none'
+    
+    return preventivo_service.lista_preventivi_con_cartelle(
+        user_id=user_id, 
+        stato_record=stato_record, 
+        cartella_id=cartella_id, 
+        skip=skip, 
+        limit=limit
+    )
+
+@app.get("/preventivi/con-cartelle", response_model=List[PreventivoListItemConCartella])
+async def lista_preventivi_con_cartelle(
+    user_id: str = Query(default="da2cb935-e023-40dd-9703-d918f1066b24", description="ID dell'utente"),
+    stato_record: str = Query("attivo", description="Stato del record: attivo, cestinato"),
+    cartella_id: Optional[str] = Query(None, description="ID della cartella (opzionale)"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    db: Session = Depends(get_db)
+):
+    """
+    Restituisce tutti i preventivi con informazioni sulle cartelle
+    """
+    preventivo_service = PreventivoService(db)
+    return preventivo_service.lista_preventivi_con_cartelle(
+        user_id=user_id, 
+        stato_record=stato_record, 
+        cartella_id=cartella_id, 
+        skip=skip, 
+        limit=limit
+    )
+
+@app.post("/preventivo/{preventivo_id}/sposta-cartella", response_class=JSONResponse)
+async def sposta_preventivo_in_cartella(
+    preventivo_id: str,
+    user_id: str = Query(default="da2cb935-e023-40dd-9703-d918f1066b24", description="ID dell'utente"),
+    cartella_id: Optional[str] = Query(None, description="ID della cartella di destinazione (None per rimuovere)"),
+    db: Session = Depends(get_db)
+):
+    """
+    Sposta un singolo preventivo in una cartella o lo rimuove da tutte le cartelle
+    """
+    try:
+        preventivo_service = PreventivoService(db)
+        preventivo = preventivo_service.sposta_preventivo_in_cartella(preventivo_id, user_id, cartella_id)
+        
+        if not preventivo:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Preventivo non trovato")
+        
+        return {
+            "message": "Preventivo spostato con successo",
+            "preventivo_id": str(preventivo.id),
+            "cartella_id": str(preventivo.cartella_id) if preventivo.cartella_id else None
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Errore nello spostamento del preventivo: {str(e)}") 

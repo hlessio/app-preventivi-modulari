@@ -23,6 +23,7 @@ class User(Base):
     # Nuove relazioni
     document_templates = relationship("DocumentTemplate", back_populates="user")
     user_preferences = relationship("UserPreferences", back_populates="user", uselist=False)
+    cartelle = relationship("Cartella", back_populates="user")
 
 class Azienda(Base):
     __tablename__ = "aziende"
@@ -67,6 +68,9 @@ class Preventivo(Base):
     # Riferimento al template utilizzato (opzionale per backward compatibility)
     template_id = Column(UUID(as_uuid=True), ForeignKey("document_templates.id"), nullable=True)
     
+    # Riferimento alla cartella (opzionale - preventivi possono non essere in nessuna cartella)
+    cartella_id = Column(UUID(as_uuid=True), ForeignKey("cartelle.id"), nullable=True)
+    
     # Usa JSONB per performance e capacità di query avanzate su PostgreSQL
     dati_preventivo = Column(JSONB, nullable=False)
     
@@ -81,6 +85,7 @@ class Preventivo(Base):
     # Relazioni
     utente = relationship("User", back_populates="preventivi")
     template = relationship("DocumentTemplate", back_populates="documents")
+    cartella = relationship("Cartella", back_populates="preventivi")
 
     @hybrid_property
     def nome_cliente(self):
@@ -151,4 +156,33 @@ class UserPreferences(Base):
     
     # Relazioni
     user = relationship("User", back_populates="user_preferences")
-    default_template = relationship("DocumentTemplate", foreign_keys=[default_document_template_id]) 
+    default_template = relationship("DocumentTemplate", foreign_keys=[default_document_template_id])
+
+class Cartella(Base):
+    __tablename__ = "cartelle"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    
+    # Informazioni cartella
+    nome = Column(String(255), nullable=False)
+    descrizione = Column(Text, nullable=True)
+    colore = Column(String(7), nullable=True)  # Hex color (es. #FF5733)
+    icona = Column(String(50), nullable=True)  # Nome dell'icona (es. 'folder', 'business', 'star')
+    
+    # Gerarchia (per cartelle annidate - opzionale)
+    parent_id = Column(UUID(as_uuid=True), ForeignKey("cartelle.id"), nullable=True)
+    
+    # Ordine personalizzato
+    ordine = Column(Integer, default=0)
+    
+    # Metadati
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relazioni
+    user = relationship("User", back_populates="cartelle")
+    preventivi = relationship("Preventivo", back_populates="cartella")
+    
+    # Auto-relazione per gerarchia
+    figli = relationship("Cartella", backref="parent", remote_side=[id]) 

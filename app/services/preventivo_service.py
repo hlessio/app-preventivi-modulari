@@ -4,8 +4,8 @@ from typing import List, Optional
 import uuid
 from datetime import datetime, timedelta # Aggiunto timedelta
 
-from ..db_models import Preventivo, User, Azienda
-from ..models import PreventivoMasterModel, IntestazioneAzienda, Indirizzo
+from ..db_models import Preventivo, User, Azienda, Cartella
+from ..models import PreventivoMasterModel, IntestazioneAzienda, Indirizzo, PreventivoListItemConCartella
 
 class PreventivoService:
     
@@ -254,4 +254,87 @@ class PreventivoService:
             sito_web_azienda=azienda.sito_web_azienda
         )
         
-        return intestazione_azienda 
+        return intestazione_azienda
+
+    def lista_preventivi_con_cartelle(self, user_id: str, stato_record: str = "attivo", cartella_id: Optional[str] = None, skip: int = 0, limit: int = 100) -> List[PreventivoListItemConCartella]:
+        """
+        Restituisce la lista dei preventivi con informazioni delle cartelle.
+        Se cartella_id è specificato, filtra per quella cartella.
+        Se cartella_id è 'none', filtra per preventivi senza cartella.
+        """
+        from sqlalchemy.orm import joinedload
+        
+        query = self.db.query(Preventivo).filter(
+            Preventivo.user_id == user_id,
+            Preventivo.stato_record == stato_record
+        ).outerjoin(Cartella, Preventivo.cartella_id == Cartella.id)
+        
+        # Filtro per cartella se specificato
+        if cartella_id == 'none':
+            query = query.filter(Preventivo.cartella_id.is_(None))
+        elif cartella_id:
+            query = query.filter(Preventivo.cartella_id == cartella_id)
+        
+        # Aggiungi le colonne della cartella alla query
+        query = query.add_columns(
+            Cartella.nome.label('cartella_nome'),
+            Cartella.colore.label('cartella_colore')
+        )
+        
+        preventivi = query.order_by(Preventivo.updated_at.desc()).offset(skip).limit(limit).all()
+        
+        # Converti in PreventivoListItemConCartella
+        result = []
+        for row in preventivi: # Rinominato item in row per chiarezza
+            preventivo_obj = row[0]    # L'oggetto Preventivo è sempre il primo elemento
+            cartella_nome_val = row[1] # Valore da Cartella.nome.label('cartella_nome')
+            cartella_colore_val = row[2]# Valore da Cartella.colore.label('cartella_colore')
+            
+            result.append(PreventivoListItemConCartella(
+                id=str(preventivo_obj.id),
+                numero_preventivo=preventivo_obj.numero_preventivo,
+                oggetto_preventivo=preventivo_obj.oggetto_preventivo,
+                stato_preventivo=preventivo_obj.stato_preventivo,
+                nome_cliente=preventivo_obj.nome_cliente,
+                valore_totale_lordo=preventivo_obj.valore_totale_lordo,
+                created_at=preventivo_obj.created_at,
+                updated_at=preventivo_obj.updated_at,
+                stato_record=preventivo_obj.stato_record,
+                cestinato_il=preventivo_obj.cestinato_il,
+                cartella_id=str(preventivo_obj.cartella_id) if preventivo_obj.cartella_id else None,
+                cartella_nome=cartella_nome_val,
+                cartella_colore=cartella_colore_val
+            ))
+        
+        return result
+
+    def sposta_preventivo_in_cartella(self, preventivo_id: str, user_id: str, cartella_id: Optional[str] = None) -> Optional[Preventivo]:
+        """
+        Sposta un preventivo in una cartella (o lo rimuove da una cartella se cartella_id è None).
+        """
+        # Trova il preventivo
+        db_preventivo = self.db.query(Preventivo).filter(
+            Preventivo.id == preventivo_id,
+            Preventivo.user_id == user_id
+        ).first()
+        
+        if not db_preventivo:
+            return None
+        
+        # Verifica che la cartella esista (se specificata)
+        if cartella_id:
+            cartella = self.db.query(Cartella).filter(
+                Cartella.id == cartella_id,
+                Cartella.user_id == user_id
+            ).first()
+            if not cartella:
+                raise ValueError("Cartella non trovata")
+        
+        # Aggiorna la cartella del preventivo
+        db_preventivo.cartella_id = cartella_id
+        db_preventivo.updated_at = datetime.utcnow()
+        
+        self.db.commit()
+        self.db.refresh(db_preventivo)
+        
+        return db_preventivo 

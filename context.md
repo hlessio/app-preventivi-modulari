@@ -101,6 +101,15 @@ Sviluppare un'applicazione web per la generazione di documenti (inizialmente pre
     *   **Decisioni Architetturali**: Già definite nel documento di design LLM
     *   **Setup LLM**: Da implementare nelle prossime fasi (API keys, modelli, etc.)
 
+**Note di Configurazione Ambiente Specifiche:**
+*   **Fix WeasyPrint su macOS (errore `libgobject-2.0-0` not found):**
+    *   **Verifica Dipendenze:** Assicurarsi che `pango`, `gdk-pixbuf`, `libffi`, e `glib` siano installati via Homebrew (`brew install pango gdk-pixbuf libffi glib`).
+    *   **Aggiornamento Variabili d'Ambiente:** Gli script `setup_weasyprint.sh` e `start_server.sh` sono stati aggiornati per includere i percorsi corretti per le librerie Homebrew nelle variabili `PKG_CONFIG_PATH` e `DYLD_LIBRARY_PATH`. Questo è cruciale per permettere a WeasyPrint di trovare `libgobject-2.0-0` e altre dipendenze.
+        *   Esempio percorsi aggiunti (potrebbero variare leggermente in base alla configurazione di Homebrew, es. `/opt/homebrew/` o `/usr/local/`):
+            *   `PKG_CONFIG_PATH` dovrebbe includere: `/opt/homebrew/opt/glib/lib/pkgconfig`, `/opt/homebrew/opt/pango/lib/pkgconfig`, ecc.
+            *   `DYLD_LIBRARY_PATH` dovrebbe includere: `/opt/homebrew/opt/glib/lib`, `/opt/homebrew/opt/pango/lib`, ecc.
+    *   **Avvio Server:** È fondamentale utilizzare lo script `start_server.sh` per avviare il server FastAPI. Questo script assicura che le variabili d'ambiente siano impostate correttamente prima dell'avvio di Uvicorn. L'avvio manuale di Uvicorn potrebbe non ereditare queste variabili, causando il fallimento di WeasyPrint. In caso di errore "Address already in use", terminare i processi Uvicorn esistenti (`ps aux | grep uvicorn` e `kill <PID>`) prima di rieseguire `./start_server.sh`.
+
 ---
 **Istruzioni per l'Agent AI (Cursor):**
 *   Questo documento serve come **fonte primaria di verità** per il contesto del progetto.
